@@ -9,6 +9,7 @@ const app = express();
 
 // Import routes
 const testRoutes = require('./src/routes/testRoutes');
+const authRoutes = require('./src/routes/authRoutes'); // 👈 ADD THIS
 
 // Middleware
 app.use(cors());
@@ -17,11 +18,28 @@ app.use(express.urlencoded({ extended: true }));
 
 // Root route
 app.get('/', (req, res) => {
-  res.json({ message: 'Online Food Ordering API is running!' });
+  res.json({ 
+    message: 'Online Food Ordering API is running!',
+    version: '1.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      test: '/api/test'
+    }
+  });
+});
+
+// Health check route
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
 });
 
 // Use routes (BEFORE the 404 handler)
 app.use('/api', testRoutes);
+app.use('/api/auth', authRoutes); // 👈 ADD THIS - Authentication routes
 
 // 404 handler for undefined routes
 app.use((req, res) => {
@@ -56,6 +74,13 @@ const startServer = async () => {
       console.log(`📝 API URL: http://localhost:${PORT}`);
       console.log(`🧪 Test route: http://localhost:${PORT}/api/test`);
       console.log(`💚 Health check: http://localhost:${PORT}/api/health`);
+      console.log(`🔐 Auth endpoints:`);
+      console.log(`   POST   /api/auth/register`);
+      console.log(`   POST   /api/auth/login`);
+      console.log(`   GET    /api/auth/me`);
+      console.log(`   PUT    /api/auth/profile`);
+      console.log(`   PUT    /api/auth/change-password`);
+      console.log(`   POST   /api/auth/logout`);
     });
 
   } catch (error) {

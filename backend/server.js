@@ -9,7 +9,9 @@ const app = express();
 
 // Import routes
 const testRoutes = require('./src/routes/testRoutes');
-const authRoutes = require('./src/routes/authRoutes'); // 👈 ADD THIS
+const authRoutes = require('./src/routes/authRoutes');
+const restaurantRoutes = require('./src/routes/restaurantRoutes'); // 👈 ADD FOR DAY 3
+const menuRoutes = require('./src/routes/menuRoutes'); // 👈 ADD FOR DAY 3
 
 // Middleware
 app.use(cors());
@@ -23,6 +25,8 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       auth: '/api/auth',
+      restaurants: '/api/restaurants',
+      menu: '/api/menu',
       test: '/api/test'
     }
   });
@@ -39,7 +43,9 @@ app.get('/api/health', (req, res) => {
 
 // Use routes (BEFORE the 404 handler)
 app.use('/api', testRoutes);
-app.use('/api/auth', authRoutes); // 👈 ADD THIS - Authentication routes
+app.use('/api/auth', authRoutes);
+app.use('/api/restaurants', restaurantRoutes); // 👈 ADD FOR DAY 3
+app.use('/api/menu', menuRoutes); // 👈 ADD FOR DAY 3
 
 // 404 handler for undefined routes
 app.use((req, res) => {
@@ -81,6 +87,18 @@ const startServer = async () => {
       console.log(`   PUT    /api/auth/profile`);
       console.log(`   PUT    /api/auth/change-password`);
       console.log(`   POST   /api/auth/logout`);
+      console.log(`🏪 Restaurant endpoints:`);
+      console.log(`   GET    /api/restaurants`);
+      console.log(`   GET    /api/restaurants/:id`);
+      console.log(`   POST   /api/restaurants (Restaurant only)`);
+      console.log(`   PUT    /api/restaurants/:id (Restaurant/Admin)`);
+      console.log(`   GET    /api/restaurants/my-restaurant/profile (Restaurant only)`);
+      console.log(`🍔 Menu endpoints:`);
+      console.log(`   GET    /api/menu/restaurant/:restaurantId`);
+      console.log(`   POST   /api/menu (Restaurant only)`);
+      console.log(`   PUT    /api/menu/:id (Restaurant/Admin)`);
+      console.log(`   DELETE /api/menu/:id (Restaurant/Admin)`);
+      console.log(`   PATCH  /api/menu/:id/toggle (Restaurant only)`);
     });
 
   } catch (error) {

@@ -10,8 +10,9 @@ const app = express();
 // Import routes
 const testRoutes = require('./src/routes/testRoutes');
 const authRoutes = require('./src/routes/authRoutes');
-const restaurantRoutes = require('./src/routes/restaurantRoutes'); // 👈 ADD FOR DAY 3
-const menuRoutes = require('./src/routes/menuRoutes'); // 👈 ADD FOR DAY 3
+const restaurantRoutes = require('./src/routes/restaurantRoutes');
+const menuRoutes = require('./src/routes/menuRoutes');
+const cartRoutes = require('./src/routes/cartRoutes'); // 👈 ADDED FOR DAY 4
 
 // Middleware
 app.use(cors());
@@ -27,6 +28,7 @@ app.get('/', (req, res) => {
       auth: '/api/auth',
       restaurants: '/api/restaurants',
       menu: '/api/menu',
+      cart: '/api/cart',
       test: '/api/test'
     }
   });
@@ -44,8 +46,9 @@ app.get('/api/health', (req, res) => {
 // Use routes (BEFORE the 404 handler)
 app.use('/api', testRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/restaurants', restaurantRoutes); // 👈 ADD FOR DAY 3
-app.use('/api/menu', menuRoutes); // 👈 ADD FOR DAY 3
+app.use('/api/restaurants', restaurantRoutes);
+app.use('/api/menu', menuRoutes);
+app.use('/api/cart', cartRoutes); // 👈 ADDED FOR DAY 4
 
 // 404 handler for undefined routes
 app.use((req, res) => {
@@ -99,6 +102,13 @@ const startServer = async () => {
       console.log(`   PUT    /api/menu/:id (Restaurant/Admin)`);
       console.log(`   DELETE /api/menu/:id (Restaurant/Admin)`);
       console.log(`   PATCH  /api/menu/:id/toggle (Restaurant only)`);
+      console.log(`🛒 Cart endpoints:`);
+      console.log(`   GET    /api/cart`);
+      console.log(`   POST   /api/cart/add`);
+      console.log(`   PUT    /api/cart/update/:menuItemId`);
+      console.log(`   DELETE /api/cart/remove/:menuItemId`);
+      console.log(`   DELETE /api/cart/clear`);
+      console.log(`   GET    /api/cart/summary`);
     });
 
   } catch (error) {

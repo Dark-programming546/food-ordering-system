@@ -65,7 +65,7 @@ const cartSchema = new mongoose.Schema({
 });
 
 // Update timestamps and calculate totals before saving
-cartSchema.pre('save', function() {
+cartSchema.pre('save', async function() {
   this.updatedAt = Date.now();
   this.totalItems = this.items.reduce((sum, item) => sum + item.quantity, 0);
   this.totalAmount = this.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -118,5 +118,7 @@ cartSchema.methods.clearCart = function() {
   this.items = [];
   return this.save();
 };
+
+module.exports = mongoose.model('Cart', cartSchema);
 
 module.exports = mongoose.model('Cart', cartSchema);

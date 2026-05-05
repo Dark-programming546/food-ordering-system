@@ -14,6 +14,7 @@ const restaurantRoutes = require('./src/routes/restaurantRoutes');
 const menuRoutes = require('./src/routes/menuRoutes');
 const cartRoutes = require('./src/routes/cartRoutes');
 const orderRoutes = require('./src/routes/orderRoutes'); // 👈 ADDED FOR DAY 5
+const paymentRoutes = require('./src/routes/paymentRoutes'); // 👈 ADDED FOR DAY 6
 
 // Middleware
 app.use(cors());
@@ -31,6 +32,7 @@ app.get('/', (req, res) => {
       menu: '/api/menu',
       cart: '/api/cart',
       orders: '/api/orders',
+      payments: '/api/payments',
       test: '/api/test'
     }
   });
@@ -52,6 +54,7 @@ app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes); // 👈 ADDED FOR DAY 5
+app.use('/api/payments', paymentRoutes); // 👈 ADDED FOR DAY 6
 
 // 404 handler for undefined routes
 app.use((req, res) => {
@@ -123,6 +126,12 @@ const startServer = async () => {
       console.log(`   PUT    /api/orders/:id/delivery-status (Delivery)`);
       console.log(`   PUT    /api/orders/:id/cancel (Customer)`);
       console.log(`   GET    /api/orders/track/:orderNumber (Public)`);
+      console.log(`\n💳 Payment endpoints:`);
+      console.log(`   POST   /api/payments/initiate`);
+      console.log(`   GET    /api/payments/history`);
+      console.log(`   GET    /api/payments/verify/:paymentId`);
+      console.log(`   GET    /api/payments/:paymentId`);
+      console.log(`   POST   /api/payments/webhook/telebirr`);
     });
 
   } catch (error) {

@@ -147,7 +147,7 @@ const orderSchema = new mongoose.Schema({
 });
 
 // Update timestamp before saving
-orderSchema.pre('save', function() {
+orderSchema.pre('save', async function() {
   this.updatedAt = Date.now();
 });
 

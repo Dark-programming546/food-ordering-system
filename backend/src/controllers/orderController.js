@@ -3,6 +3,14 @@ const Cart = require('../models/Cart');
 const Restaurant = require('../models/Restaurant');
 const User = require('../models/User');
 
+// Socket manager will be set from server
+let socketManager = null;
+
+// Function to set socket manager (called from server)
+const setSocketManager = (manager) => {
+  socketManager = manager;
+};
+
 // Helper function to generate order number
 const generateOrderNumber = () => {
   const date = new Date();
@@ -100,7 +108,7 @@ const createOrder = async (req, res) => {
       specialInstructions: item.specialInstructions || ''
     }));
     
-    // Create order (using new Order() instead of Order.create() to avoid pre-save issues)
+    // Create order
     const order = new Order({
       orderNumber: generateOrderNumber(),
       customer: req.user.id,
@@ -130,6 +138,23 @@ const createOrder = async (req, res) => {
     
     // Clear cart after order
     await cart.clearCart();
+    
+    // 🔴 SOCKET.IO: Notify restaurant about new order in real-time
+    try {
+      if (socketManager) {
+        socketManager.notifyNewOrder(restaurant._id.toString(), {
+          id: order._id,
+          orderNumber: order.orderNumber,
+          customerName: order.customerName,
+          totalAmount: order.totalAmount,
+          items: order.items,
+          createdAt: order.createdAt
+        });
+        console.log(`✅ Real-time notification sent to restaurant ${restaurant.name}`);
+      }
+    } catch (socketError) {
+      console.error('Socket notification error:', socketError);
+    }
     
     res.status(201).json({
       success: true,
@@ -358,6 +383,21 @@ const updateOrderStatus = async (req, res) => {
     
     await order.updateStatus(status, req.user.id, note || `Order status updated to ${status}`);
     
+    // 🔴 SOCKET.IO: Notify customer about status change in real-time
+    try {
+      if (socketManager) {
+        socketManager.notifyOrderStatusUpdate(
+          order.customer.toString(),
+          order._id.toString(),
+          status,
+          note || `Order status updated to ${status}`
+        );
+        console.log(`✅ Real-time status update sent to customer for order ${order.orderNumber}`);
+      }
+    } catch (socketError) {
+      console.error('Socket notification error:', socketError);
+    }
+    
     res.status(200).json({
       success: true,
       message: `Order status updated to ${status}`,
@@ -409,6 +449,21 @@ const assignDeliveryPerson = async (req, res) => {
     
     order.deliveryPerson = deliveryPersonId;
     await order.save();
+    
+    // 🔴 SOCKET.IO: Notify customer and delivery person about assignment
+    try {
+      if (socketManager) {
+        socketManager.notifyDeliveryAssigned(
+          order.customer.toString(),
+          order._id.toString(),
+          deliveryPerson
+        );
+        socketManager.notifyDeliveryPersonAssigned(deliveryPersonId, order);
+        console.log(`✅ Real-time delivery assignment notifications sent for order ${order.orderNumber}`);
+      }
+    } catch (socketError) {
+      console.error('Socket notification error:', socketError);
+    }
     
     res.status(200).json({
       success: true,
@@ -466,6 +521,21 @@ const updateDeliveryStatus = async (req, res) => {
     }
     
     await order.updateStatus(status, req.user.id, note || `Delivery status: ${status}`);
+    
+    // 🔴 SOCKET.IO: Notify customer about delivery status change
+    try {
+      if (socketManager) {
+        socketManager.notifyOrderStatusUpdate(
+          order.customer.toString(),
+          order._id.toString(),
+          status,
+          note || `Delivery status: ${status}`
+        );
+        console.log(`✅ Real-time delivery status update sent to customer for order ${order.orderNumber}`);
+      }
+    } catch (socketError) {
+      console.error('Socket notification error:', socketError);
+    }
     
     res.status(200).json({
       success: true,
@@ -559,6 +629,24 @@ const cancelOrder = async (req, res) => {
     
     await order.updateStatus('cancelled', req.user.id, 'Order cancelled by customer');
     
+    // 🔴 SOCKET.IO: Notify restaurant about cancellation
+    try {
+      if (socketManager) {
+        const restaurant = await Restaurant.findOne({ _id: order.restaurant });
+        if (restaurant) {
+          socketManager.notifyOrderStatusUpdate(
+            order.customer.toString(),
+            order._id.toString(),
+            'cancelled',
+            'Order cancelled by customer'
+          );
+        }
+        console.log(`✅ Real-time cancellation notification sent`);
+      }
+    } catch (socketError) {
+      console.error('Socket notification error:', socketError);
+    }
+    
     res.status(200).json({
       success: true,
       message: 'Order cancelled successfully',
@@ -583,5 +671,6 @@ module.exports = {
   assignDeliveryPerson,
   updateDeliveryStatus,
   trackOrder,
-  cancelOrder
+  cancelOrder,
+  setSocketManager
 };

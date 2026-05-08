@@ -50,6 +50,7 @@ const menuRoutes = require('./src/routes/menuRoutes');
 const cartRoutes = require('./src/routes/cartRoutes');
 const orderRoutes = require('./src/routes/orderRoutes');
 const paymentRoutes = require('./src/routes/paymentRoutes');
+const otpRoutes = require('./src/routes/otpRoutes'); // 👈 ADDED FOR OTP
 
 // Make socket manager available to routes
 app.set('socketManager', socketManager);
@@ -92,6 +93,7 @@ app.get('/api', (req, res) => {
       cart: '/api/cart',
       orders: '/api/orders',
       payments: '/api/payments',
+      otp: '/api/otp',
       test: '/api/test'
     }
   });
@@ -114,6 +116,7 @@ app.use('/api/menu', menuRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/otp', otpRoutes); // 👈 ADDED FOR OTP
 app.use('/api/test', testRoutes);
 
 // 404 handler for API routes
@@ -198,6 +201,11 @@ const startServer = async () => {
       console.log(`   GET    /api/payments/verify/:paymentId`);
       console.log(`   GET    /api/payments/:paymentId`);
       console.log(`   POST   /api/payments/webhook/telebirr`);
+      
+      console.log(`\n📧 OTP endpoints:`);
+      console.log(`   POST   /api/otp/send - Send OTP to email`);
+      console.log(`   POST   /api/otp/verify - Verify OTP code`);
+      console.log(`   POST   /api/otp/resend - Resend OTP`);
       
       console.log(`\n🔌 WebSocket Events:`);
       console.log(`   join_customer_room - Connect customer to real-time updates`);

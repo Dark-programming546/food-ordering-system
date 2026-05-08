@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const OTP = require('../models/OTP');
 const jwt = require('jsonwebtoken');
 
 const generateToken = (id) => {
@@ -7,9 +8,9 @@ const generateToken = (id) => {
   });
 };
 
-// Register
+// Register - Create user but require email verification
 const register = async (req, res) => {
-  console.log('📝 Register request received:', req.body);
+  console.log('📝 Register request received:', { email: req.body.email, role: req.body.role });
   
   try {
     const { name, email, password, phone, role } = req.body;
@@ -23,28 +24,31 @@ const register = async (req, res) => {
       });
     }
 
-    // Create user
+    // Create user (email not verified yet)
     const user = await User.create({
       name,
       email,
       password,
       phone,
-      role: role || 'customer'
+      role: role || 'customer',
+      isEmailVerified: false  // User must verify email
     });
 
-    // Generate token
+    // Generate token for later use (but user cannot login until verified)
     const token = generateToken(user._id);
 
     res.status(201).json({
       success: true,
-      message: 'Registration successful',
-      token,
+      message: 'Registration successful! Please verify your email with the OTP sent to your inbox.',
+      requiresEmailVerification: true,
+      token,  // Token provided but login will check verification status
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         phone: user.phone,
-        role: user.role
+        role: user.role,
+        isEmailVerified: false
       }
     });
   } catch (error) {
@@ -56,7 +60,149 @@ const register = async (req, res) => {
   }
 };
 
-// Login
+// Verify email with OTP - Call this after registration
+const verifyEmailWithOTP = async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    
+    if (!email || !code) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and OTP code are required'
+      });
+    }
+    
+    // Find the OTP record
+    const otpRecord = await OTP.findOne({
+      email: email.toLowerCase(),
+      code: code,
+      purpose: 'registration',
+      isUsed: false
+    });
+    
+    if (!otpRecord) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid OTP code'
+      });
+    }
+    
+    // Check if expired
+    if (new Date() > otpRecord.expiresAt) {
+      await otpRecord.deleteOne();
+      return res.status(400).json({
+        success: false,
+        message: 'OTP has expired. Please request a new one.'
+      });
+    }
+    
+    // Find the user
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Mark email as verified
+    await user.markEmailVerified();
+    
+    // Mark OTP as used
+    otpRecord.isUsed = true;
+    await otpRecord.save();
+    
+    // Generate new token with verified status
+    const token = generateToken(user._id);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Email verified successfully! You can now login.',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        isEmailVerified: true
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Verify email error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// Resend verification OTP
+const resendVerificationOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+    
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    if (user.isEmailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already verified'
+      });
+    }
+    
+    // Invalidate old OTPs
+    await OTP.updateMany(
+      { email: email.toLowerCase(), purpose: 'registration', isUsed: false },
+      { isUsed: true }
+    );
+    
+    // Import OTP service to send new OTP
+    const { sendOTP } = require('../services/otpService');
+    const { generateOTP } = require('../utils/otpGenerator');
+    
+    const otpCode = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    
+    await OTP.create({
+      email: email.toLowerCase(),
+      code: otpCode,
+      purpose: 'registration',
+      expiresAt: expiresAt
+    });
+    
+    await sendOTP(email, otpCode, 'registration');
+    
+    res.status(200).json({
+      success: true,
+      message: 'Verification OTP resent successfully',
+      expiresIn: '10 minutes'
+    });
+    
+  } catch (error) {
+    console.error('❌ Resend verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// Login - Check if email is verified
 const login = async (req, res) => {
   console.log('🔐 Login request received:', req.body.email);
   
@@ -75,6 +221,24 @@ const login = async (req, res) => {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
+      });
+    }
+
+    // 👇 CHECK IF EMAIL IS VERIFIED
+    if (!user.isEmailVerified) {
+      return res.status(401).json({
+        success: false,
+        message: 'Please verify your email address first. Check your inbox for the OTP code.',
+        requiresVerification: true,
+        email: user.email
+      });
+    }
+
+    // 👇 CHECK IF ACCOUNT IS ACTIVE
+    if (!user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: 'Your account has been deactivated. Please contact admin.'
       });
     }
 
@@ -97,7 +261,8 @@ const login = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        role: user.role
+        role: user.role,
+        isEmailVerified: user.isEmailVerified
       }
     });
   } catch (error) {
@@ -187,6 +352,8 @@ const changePassword = async (req, res) => {
 
 module.exports = {
   register,
+  verifyEmailWithOTP,  // 👈 NEW
+  resendVerificationOTP, // 👈 NEW
   login,
   getMe,
   updateProfile,

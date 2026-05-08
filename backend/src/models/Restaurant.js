@@ -83,6 +83,28 @@ const restaurantSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  // 👇 ADMIN PANEL FIELDS
+  isApproved: {
+    type: Boolean,
+    default: false
+  },
+  approvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  approvedAt: {
+    type: Date,
+    default: null
+  },
+  featured: {
+    type: Boolean,
+    default: false
+  },
+  rejectionReason: {
+    type: String,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now

@@ -50,7 +50,8 @@ const menuRoutes = require('./src/routes/menuRoutes');
 const cartRoutes = require('./src/routes/cartRoutes');
 const orderRoutes = require('./src/routes/orderRoutes');
 const paymentRoutes = require('./src/routes/paymentRoutes');
-const otpRoutes = require('./src/routes/otpRoutes'); // 👈 ADDED FOR OTP
+const otpRoutes = require('./src/routes/otpRoutes');
+const adminRoutes = require('./src/routes/adminRoutes'); // 👈 ADDED FOR ADMIN PANEL
 
 // Make socket manager available to routes
 app.set('socketManager', socketManager);
@@ -94,6 +95,7 @@ app.get('/api', (req, res) => {
       orders: '/api/orders',
       payments: '/api/payments',
       otp: '/api/otp',
+      admin: '/api/admin',
       test: '/api/test'
     }
   });
@@ -116,7 +118,8 @@ app.use('/api/menu', menuRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api/otp', otpRoutes); // 👈 ADDED FOR OTP
+app.use('/api/otp', otpRoutes);
+app.use('/api/admin', adminRoutes); // 👈 ADDED FOR ADMIN PANEL
 app.use('/api/test', testRoutes);
 
 // 404 handler for API routes
@@ -160,6 +163,8 @@ const startServer = async () => {
       console.log(`   PUT    /api/auth/profile`);
       console.log(`   PUT    /api/auth/change-password`);
       console.log(`   POST   /api/auth/logout`);
+      console.log(`   POST   /api/auth/verify-email`);
+      console.log(`   POST   /api/auth/resend-verification`);
       
       console.log(`\n🏪 Restaurant endpoints:`);
       console.log(`   GET    /api/restaurants`);
@@ -206,6 +211,19 @@ const startServer = async () => {
       console.log(`   POST   /api/otp/send - Send OTP to email`);
       console.log(`   POST   /api/otp/verify - Verify OTP code`);
       console.log(`   POST   /api/otp/resend - Resend OTP`);
+      
+      console.log(`\n👑 Admin endpoints:`);
+      console.log(`   GET    /api/admin/dashboard - Dashboard stats`);
+      console.log(`   GET    /api/admin/users - Get all users`);
+      console.log(`   GET    /api/admin/users/:id - Get user details`);
+      console.log(`   PUT    /api/admin/users/:id/role - Update user role`);
+      console.log(`   PUT    /api/admin/users/:id/status - Activate/deactivate user`);
+      console.log(`   DELETE /api/admin/users/:id - Delete user`);
+      console.log(`   GET    /api/admin/restaurants - Get all restaurants`);
+      console.log(`   PUT    /api/admin/restaurants/:id/approve - Approve restaurant`);
+      console.log(`   PUT    /api/admin/restaurants/:id/block - Block restaurant`);
+      console.log(`   GET    /api/admin/orders - Get all orders`);
+      console.log(`   GET    /api/admin/reports/sales - Sales report`);
       
       console.log(`\n🔌 WebSocket Events:`);
       console.log(`   join_customer_room - Connect customer to real-time updates`);

@@ -49,12 +49,34 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  // 👇 NEW FIELDS FOR OTP VERIFICATION
+  // 👇 OTP VERIFICATION FIELDS
   isEmailVerified: {
     type: Boolean,
     default: false
   },
   emailVerifiedAt: {
+    type: Date,
+    default: null
+  },
+  // 👇 ADMIN PANEL FIELDS
+  approved: {
+    type: Boolean,
+    default: false
+  },
+  approvedAt: {
+    type: Date,
+    default: null
+  },
+  approvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  rejectionReason: {
+    type: String,
+    default: null
+  },
+  lastLoginAt: {
     type: Date,
     default: null
   },
@@ -79,6 +101,12 @@ userSchema.methods.comparePassword = async function (enteredPassword) {
 userSchema.methods.markEmailVerified = async function () {
   this.isEmailVerified = true;
   this.emailVerifiedAt = new Date();
+  await this.save();
+};
+
+// Update last login
+userSchema.methods.updateLastLogin = async function () {
+  this.lastLoginAt = new Date();
   await this.save();
 };
 

@@ -1,20 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
-import { FiMail, FiCheckCircle, FiArrowRight, FiSend } from 'react-icons/fi';
-import AnimatedBackground from '../../components/common/AnimatedBackground';
-import api from '../../services/api';
+import { FiMail, FiRefreshCw, FiCheckCircle } from 'react-icons/fi';
 
 const VerifyEmail = () => {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
-  const { verifyEmail } = useAuth();
+  const [currentImage, setCurrentImage] = useState(0);
+  const { verifyEmail, resendVerification } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const email = location.state?.email || '';
+
+  // Background images (same as register page)
+  const backgroundImages = [
+    'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=1920&auto=format',
+    'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=1920&auto=format',
+    'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1920&auto=format',
+    'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=1920&auto=format',
+    'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=1920&auto=format',
+    'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=1920&auto=format',
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImage((prev) => (prev + 1) % backgroundImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!email) {
+      navigate('/register');
+    }
+  }, [email, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,154 +47,124 @@ const VerifyEmail = () => {
     
     setLoading(true);
     const result = await verifyEmail(email, code);
-    
     if (result.success) {
-      toast.success('Email verified! Redirecting...');
-      setTimeout(() => navigate('/'), 2000);
-    } else {
-      toast.error(result.message);
+      navigate('/login');
     }
-    
     setLoading(false);
   };
 
   const handleResend = async () => {
-    if (!email) {
-      toast.error('Email not found. Please register again.');
-      navigate('/register');
-      return;
-    }
-    
     setResending(true);
-    try {
-      await api.post('/auth/resend-verification', { email });
-      toast.success('Verification code resent! Check your email.');
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to resend code');
-    }
+    await resendVerification(email);
     setResending(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
-      <AnimatedBackground />
-      
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-md w-full"
-      >
+    <div className="relative min-h-screen overflow-hidden">
+      <div className="absolute inset-0">
+        {backgroundImages.map((img, index) => (
+          <div
+            key={index}
+            className="absolute inset-0 transition-opacity duration-1000 ease-in-out"
+            style={{
+              backgroundImage: `url(${img})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              opacity: currentImage === index ? 1 : 0,
+            }}
+          >
+            <div className="absolute inset-0 bg-black/60"></div>
+          </div>
+        ))}
+      </div>
+
+      <div className="relative z-10 min-h-screen flex items-center justify-center py-12 px-4">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.4 }}
-          className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-white/20 text-center"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="max-w-md w-full"
         >
-          {/* Icon */}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
-            className="mb-6"
-          >
-            <div className="w-24 h-24 bg-primary-500/20 rounded-full flex items-center justify-center mx-auto">
-              <FiMail className="w-12 h-12 text-primary-400" />
+          <div className="text-center mb-6">
+            <div className="text-6xl mb-3 drop-shadow-lg">📧</div>
+            <h2 className="text-3xl font-bold text-white drop-shadow-lg">Verify Your Email</h2>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl p-6 border border-white/20">
+            <div className="text-center mb-6">
+              <p className="text-white/80 text-sm">
+                We've sent a verification code to:
+                <br />
+                <span className="text-orange-400 font-semibold">{email}</span>
+              </p>
             </div>
-          </motion.div>
 
-          <motion.h2
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-2xl font-bold text-white mb-2"
-          >
-            Verify Your Email
-          </motion.h2>
-          
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="text-white/70 mb-6"
-          >
-            We've sent a verification code to
-            <br />
-            <span className="text-primary-400 font-semibold">{email || 'your email'}</span>
-          </motion.p>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-white mb-1">
+                  Verification Code
+                </label>
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  className="w-full text-center text-2xl tracking-widest py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder="000000"
+                  required
+                />
+              </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <motion.div
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              <input
-                type="text"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                maxLength={6}
-                className="w-full text-center text-2xl tracking-widest py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                placeholder="000000"
-                autoFocus
-              />
-            </motion.div>
-
-            <motion.button
-              type="submit"
-              disabled={loading}
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full py-3 px-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg"
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <>
-                  <FiCheckCircle className="w-5 h-5" />
-                  <span>Verify Email</span>
-                </>
-              )}
-            </motion.button>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="text-center"
-            >
               <button
-                type="button"
-                onClick={handleResend}
-                disabled={resending}
-                className="text-white/70 hover:text-white transition flex items-center justify-center space-x-2 mx-auto"
+                type="submit"
+                disabled={loading}
+                className="w-full py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-red-600 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg"
               >
-                {resending ? (
+                {loading ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  <FiSend className="w-4 h-4" />
+                  <>
+                    <FiCheckCircle />
+                    <span>Verify Email</span>
+                  </>
                 )}
-                <span>Resend Code</span>
               </button>
-            </motion.div>
-          </form>
+            </form>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-            className="mt-6"
-          >
-            <Link to="/login" className="text-sm text-white/60 hover:text-white transition flex items-center justify-center space-x-1">
-              <span>Back to Login</span>
-              <FiArrowRight className="w-4 h-4" />
-            </Link>
-          </motion.div>
+            <div className="mt-5 text-center">
+              <button
+                onClick={handleResend}
+                disabled={resending}
+                className="text-orange-400 hover:text-orange-300 text-sm flex items-center justify-center space-x-1 mx-auto"
+              >
+                <FiRefreshCw className={resending ? 'animate-spin' : ''} />
+                <span>{resending ? 'Sending...' : 'Resend Code'}</span>
+              </button>
+              <p className="text-white/50 text-xs mt-3">Check your spam folder if you don't see the email.</p>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-white/20 text-center">
+              <Link to="/login" className="text-white/60 hover:text-white text-sm">
+                ← Back to Login
+              </Link>
+            </div>
+          </div>
+
+          <div className="mt-6 flex justify-center space-x-2">
+            {backgroundImages.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentImage(index)}
+                className={`transition-all duration-300 ${
+                  currentImage === index
+                    ? 'w-6 h-1.5 bg-white rounded-full'
+                    : 'w-1.5 h-1.5 bg-white/50 rounded-full hover:bg-white/80'
+                }`}
+              />
+            ))}
+          </div>
         </motion.div>
-      </motion.div>
+      </div>
     </div>
   );
 };

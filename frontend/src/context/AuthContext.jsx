@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import api from '../services/api';
+import { authService } from '../services/api';
+import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
 
@@ -11,17 +12,19 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
 
   useEffect(() => {
-    // Load user from localStorage on mount
     const storedUser = localStorage.getItem('user');
-    if (storedUser && token) {
+    const storedToken = localStorage.getItem('token');
+    
+    if (storedUser && storedToken) {
       setUser(JSON.parse(storedUser));
+      setToken(storedToken);
     }
     setLoading(false);
-  }, [token]);
+  }, []);
 
   const login = async (email, password) => {
     try {
-      const response = await api.post('/auth/login', { email, password });
+      const response = await authService.login(email, password);
       const { token, user } = response.data;
       
       localStorage.setItem('token', token);
@@ -30,18 +33,18 @@ export const AuthProvider = ({ children }) => {
       setToken(token);
       setUser(user);
       
+      toast.success(`Welcome back, ${user.name}!`);
       return { success: true, user };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Login failed' 
-      };
+      const message = error.response?.data?.message || 'Login failed';
+      toast.error(message);
+      return { success: false, message };
     }
   };
 
   const register = async (userData) => {
     try {
-      const response = await api.post('/auth/register', userData);
+      const response = await authService.register(userData);
       const { token, user, requiresEmailVerification } = response.data;
       
       if (token) {
@@ -51,22 +54,27 @@ export const AuthProvider = ({ children }) => {
         setUser(user);
       }
       
+      if (requiresEmailVerification) {
+        toast.success('Registration successful! Please verify your email.');
+      } else {
+        toast.success('Registration successful!');
+      }
+      
       return { 
         success: true, 
         user, 
-        requiresEmailVerification 
+        requiresEmailVerification: requiresEmailVerification || false 
       };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Registration failed' 
-      };
+      const message = error.response?.data?.message || 'Registration failed';
+      toast.error(message);
+      return { success: false, message };
     }
   };
 
   const verifyEmail = async (email, code) => {
     try {
-      const response = await api.post('/auth/verify-email', { email, code });
+      const response = await authService.verifyEmail(email, code);
       const { token, user } = response.data;
       
       localStorage.setItem('token', token);
@@ -74,12 +82,24 @@ export const AuthProvider = ({ children }) => {
       setToken(token);
       setUser(user);
       
+      toast.success('Email verified successfully!');
       return { success: true, user };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Verification failed' 
-      };
+      const message = error.response?.data?.message || 'Verification failed';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
+  const resendVerification = async (email) => {
+    try {
+      await authService.resendVerification(email);
+      toast.success('Verification email resent. Please check your inbox.');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to resend verification';
+      toast.error(message);
+      return { success: false, message };
     }
   };
 
@@ -88,20 +108,33 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     setToken(null);
     setUser(null);
+    toast.success('Logged out successfully');
   };
 
   const updateProfile = async (data) => {
     try {
-      const response = await api.put('/auth/profile', data);
+      const response = await authService.updateProfile(data);
       const updatedUser = response.data.user;
       localStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser);
+      toast.success('Profile updated successfully');
       return { success: true, user: updatedUser };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Update failed' 
-      };
+      const message = error.response?.data?.message || 'Update failed';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      await authService.changePassword(currentPassword, newPassword);
+      toast.success('Password changed successfully');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to change password';
+      toast.error(message);
+      return { success: false, message };
     }
   };
 
@@ -117,8 +150,10 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     verifyEmail,
+    resendVerification,
     logout,
     updateProfile,
+    changePassword,
   };
 
   return (

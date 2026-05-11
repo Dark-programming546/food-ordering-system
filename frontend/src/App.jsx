@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/common/Navbar';
+import RestaurantDetail from './pages/customer/RestaurantDetail';
 
 // Auth Pages
 import Login from './pages/auth/Login';
@@ -45,6 +46,7 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/restaurant/:id" element={<RestaurantDetail />} />
       
       {/* Customer Routes */}
       <Route path="/customer/dashboard" element={

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, Navigation, EffectFade } from 'swiper/modules';
+
 import { useAuth } from '../../context/AuthContext';
 import { restaurantService } from '../../services/restaurantService';
 import {
@@ -128,7 +129,6 @@ const Home = () => {
       </div>
 
       {/* FEATURED RESTAURANTS */}
-      {/* FEATURED RESTAURANTS */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-3xl font-bold mb-8 text-gray-800">Featured Restaurants</h2>
@@ -157,28 +157,30 @@ const Home = () => {
                   // Priority: 1. DB cover, 2. DB image, 3. Fallback list
                   const coverImage = r.images?.cover || r.image || fallbackMeals[i % fallbackMeals.length];
 
+                  // 🔥 ONLY CHANGE: Added <Link> wrapper around the card
                   return (
-                    <div key={i} className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col h-full border border-gray-100 transition-transform hover:scale-[1.02]">
-                      <div className="h-48 w-full overflow-hidden bg-gray-100">
-                        <img 
-                          src={coverImage} 
-                          className="w-full h-full object-cover" 
-                          alt={r.name || "Restaurant"}
-                          // This onError tag ensures if the URL is broken, it loads a meal image
-                          onError={(e) => { e.target.src = fallbackMeals[i % fallbackMeals.length]; }}
-                        />
-                      </div>
-                      <div className="p-5 flex-1 flex flex-col">
-                        <h3 className="font-bold text-xl mb-1 text-gray-800">{r.name || "Delicious Eats"}</h3>
-                        <p className="text-sm text-gray-500 mb-4">
-                          {Array.isArray(r.cuisine) ? r.cuisine.join(", ") : (r.cuisine || "Specialty Food")}
-                        </p>
-                        <div className="mt-auto pt-3 border-t flex justify-between text-sm font-medium text-gray-600">
-                          <span className="flex items-center gap-1"><FiClock className="text-orange-500" /> {r.deliveryTime || "30-40 min"}</span>
-                          <span className="flex items-center gap-1"><FiStar className="text-yellow-500" /> {r.rating || 4.7}</span>
+                    <Link to={`/restaurant/${r._id}`} key={i} className="block transition-transform hover:scale-[1.02]">
+                      <div className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col h-full border border-gray-100">
+                        <div className="h-48 w-full overflow-hidden bg-gray-100">
+                          <img 
+                            src={coverImage} 
+                            className="w-full h-full object-cover" 
+                            alt={r.name || "Restaurant"}
+                            onError={(e) => { e.target.src = fallbackMeals[i % fallbackMeals.length]; }}
+                          />
+                        </div>
+                        <div className="p-5 flex-1 flex flex-col">
+                          <h3 className="font-bold text-xl mb-1 text-gray-800">{r.name || "Delicious Eats"}</h3>
+                          <p className="text-sm text-gray-500 mb-4">
+                            {Array.isArray(r.cuisine) ? r.cuisine.join(", ") : (r.cuisine || "Specialty Food")}
+                          </p>
+                          <div className="mt-auto pt-3 border-t flex justify-between text-sm font-medium text-gray-600">
+                            <span className="flex items-center gap-1"><FiClock className="text-orange-500" /> {r.deliveryTime || "30-40 min"}</span>
+                            <span className="flex items-center gap-1"><FiStar className="text-yellow-500" /> {r.rating || 4.7}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   );
                 })
               ) : (

@@ -61,6 +61,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve images folder 
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
+
 // Dashboard route
 app.get('/dashboard', (req, res) => {
   const dashboardPath = path.join(publicDir, 'dashboard.html');

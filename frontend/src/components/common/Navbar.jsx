@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 import { FiShoppingCart, FiUser, FiLogOut, FiHome, FiMenu, FiX } from 'react-icons/fi';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout, isAdmin, isRestaurant, isDelivery } = useAuth();
+  const { cartCount } = useCart();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -46,8 +48,13 @@ const Navbar = () => {
                 
                 {!isRestaurant && !isDelivery && !isAdmin && (
                   <Link to="/cart" className="relative text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                    <FiShoppingCart className="inline text-lg" />
+                    <FiShoppingCart className="inline text-xl" />
                     <span className="ml-1">Cart</span>
+                    {cartCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {cartCount}
+                      </span>
+                    )}
                   </Link>
                 )}
                 
@@ -109,6 +116,12 @@ const Navbar = () => {
                 <Link to={getDashboardLink()} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary-600">
                   Dashboard
                 </Link>
+                {/* Cart link in mobile menu */}
+                {!isRestaurant && !isDelivery && !isAdmin && (
+                  <Link to="/cart" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary-600">
+                    Cart {cartCount > 0 && `(${cartCount})`}
+                  </Link>
+                )}
                 <button
                   onClick={handleLogout}
                   className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600"

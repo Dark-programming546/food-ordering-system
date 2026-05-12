@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 import { restaurantService } from '../../services/restaurantService';
 import { FiStar, FiMapPin, FiClock, FiDollarSign, FiPhone, FiMail, FiChevronLeft, FiShoppingCart } from 'react-icons/fi';
 import toast from 'react-hot-toast';
@@ -10,6 +11,7 @@ const RestaurantDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const { addToCart } = useCart();
   const [restaurant, setRestaurant] = useState(null);
   const [menu, setMenu] = useState({});
   const [loading, setLoading] = useState(true);
@@ -51,7 +53,9 @@ const RestaurantDetail = () => {
     }
     
     const quantity = quantities[item._id] || 1;
-    // Cart functionality will be added in Day 4
+    addToCart(item, restaurant._id, restaurant.name, quantity);
+    
+    // ONLY ONE TOAST - here in the component
     toast.success(`Added ${quantity} x ${item.name} to cart`);
     setQuantities({ ...quantities, [item._id]: 1 });
   };
@@ -168,7 +172,10 @@ const RestaurantDetail = () => {
                         <img
                           src={item.image}
                           alt={item.name}
-                          className="w-24 h-24 object-cover"
+                          className="w-24 h-24 object-cover rounded-l-xl"
+                          onError={(e) => {
+                            e.target.src = 'https://cdn.pixabay.com/photo/2017/12/09/08/18/pizza-3007395_150.jpg';
+                          }}
                         />
                       )}
                       <div className="flex-1 p-4">
@@ -195,7 +202,7 @@ const RestaurantDetail = () => {
                             <div className="flex items-center border rounded-lg">
                               <button
                                 onClick={() => updateQuantity(item._id, -1)}
-                                className="px-3 py-1 hover:bg-gray-100"
+                                className="px-3 py-1 hover:bg-gray-100 transition"
                               >
                                 -
                               </button>
@@ -204,15 +211,16 @@ const RestaurantDetail = () => {
                               </span>
                               <button
                                 onClick={() => updateQuantity(item._id, 1)}
-                                className="px-3 py-1 hover:bg-gray-100"
+                                className="px-3 py-1 hover:bg-gray-100 transition"
                               >
                                 +
                               </button>
                             </div>
                             <button
                               onClick={() => handleAddToCart(item)}
-                              className="bg-orange-500 text-white px-4 py-1 rounded-lg hover:bg-orange-600 transition text-sm"
+                              className="bg-orange-500 text-white px-4 py-1 rounded-lg hover:bg-orange-600 transition text-sm flex items-center gap-1"
                             >
+                              <FiShoppingCart className="w-3 h-3" />
                               Add to Cart
                             </button>
                           </div>

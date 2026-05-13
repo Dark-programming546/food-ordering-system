@@ -42,9 +42,11 @@ api.interceptors.response.use(
       toast.error('Resource not found');
     } else if (error.response?.status >= 500) {
       toast.error('Server error. Please try again later');
-    } else {
-      toast.error(message);
     }
+    // ✅ REMOVE THE ELSE BLOCK THAT SHOWS TOAST FOR OTHER ERRORS
+    // else {
+    //   toast.error(message);
+    // }
     
     return Promise.reject(error);
   }
@@ -94,7 +96,10 @@ export const cartService = {
 
 // Order Services
 export const orderService = {
-  create: (data) => api.post('/orders/create', data),
+  create: (data) => {
+    console.log('📦 Order Service - Sending to backend:', data);
+    return api.post('/orders/create', data);
+  },
   getCustomerOrders: () => api.get('/orders/customer'),
   getRestaurantOrders: (params) => api.get('/orders/restaurant', { params }),
   getDeliveryOrders: () => api.get('/orders/delivery'),

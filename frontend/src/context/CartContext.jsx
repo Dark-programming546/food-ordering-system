@@ -41,7 +41,7 @@ export const CartProvider = ({ children }) => {
     setCartTotal(total);
   };
 
-  // Add item to cart - NO TOAST HERE
+  // Add item to cart
   const addToCart = (item, restaurantId, restaurantName, quantity = 1) => {
     setCart(prevCart => {
       const existingItemIndex = prevCart.findIndex(
@@ -68,7 +68,7 @@ export const CartProvider = ({ children }) => {
     });
   };
 
-  // Remove item from cart - NO TOAST HERE (toast in Cart.jsx)
+  // Remove item from cart
   const removeFromCart = (menuItemId) => {
     setCart(prevCart => {
       const newCart = prevCart.filter(item => item.menuItemId !== menuItemId);
@@ -92,10 +92,10 @@ export const CartProvider = ({ children }) => {
     );
   };
 
-  // Clear entire cart - WITH TOAST
+  // Clear entire cart - NO TOAST (handled in Checkout.jsx)
   const clearCart = () => {
     setCart([]);
-    toast.success('Cart cleared');
+    // Toast removed - will be shown in Checkout.jsx
   };
 
   // Get cart summary for checkout

@@ -14,10 +14,23 @@ const Cart = () => {
 
   const handleCheckout = () => {
     if (!isAuthenticated) {
+      toast.error('Please login to checkout');
       navigate('/login');
       return;
     }
     navigate('/checkout');
+  };
+
+  // Handle remove with single toast
+  const handleRemoveItem = (menuItemId, itemName) => {
+    removeFromCart(menuItemId);
+    toast.success(`${itemName} removed from cart`);
+  };
+
+  // Handle clear cart with single toast
+  const handleClearCart = () => {
+    clearCart();
+    toast.success('Cart cleared');
   };
 
   if (cart.length === 0) {
@@ -98,15 +111,12 @@ const Cart = () => {
                     {/* Price & Remove */}
                     <div className="text-right min-w-[100px]">
                       <p className="font-bold text-gray-800">{formatPrice(item.price * item.quantity)}</p>
-                             <button
-                                 onClick={() => {
-                                      removeFromCart(item.menuItemId);
-                                     toast.success('Item removed from cart');
-                                             }}
-                         className="text-red-500 hover:text-red-600 text-sm flex items-center gap-1 mt-1"
-                                                                                   >
-                <FiTrash2 className="w-3 h-3" /> Remove
-                                                </button>
+                      <button
+                        onClick={() => handleRemoveItem(item.menuItemId, item.name)}
+                        className="text-red-500 hover:text-red-600 text-sm flex items-center gap-1 mt-1"
+                      >
+                        <FiTrash2 className="w-3 h-3" /> Remove
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -115,7 +125,7 @@ const Cart = () => {
               {/* Clear Cart Button */}
               <div className="border-t p-4 bg-gray-50">
                 <button
-                  onClick={clearCart}
+                  onClick={handleClearCart}
                   className="text-red-500 hover:text-red-600 text-sm flex items-center gap-1"
                 >
                   <FiTrash2 /> Clear Cart

@@ -6,6 +6,8 @@ import { CartProvider } from './context/CartContext';
 import Navbar from './components/common/Navbar';
 import RestaurantDetail from './pages/customer/RestaurantDetail';
 import Cart from './pages/customer/Cart';
+import Checkout from './pages/customer/Checkout';
+import OrderConfirmation from './pages/customer/OrderConfirmation';
 
 // Auth Pages
 import Login from './pages/auth/Login';
@@ -63,7 +65,12 @@ function AppRoutes() {
       } />
       <Route path="/checkout" element={
         <ProtectedRoute allowedRoles={['customer']}>
-          <ComingSoon title="Checkout" />
+          <Checkout />
+        </ProtectedRoute>
+      } />
+      <Route path="/order-confirmation/:id" element={
+        <ProtectedRoute allowedRoles={['customer']}>
+          <OrderConfirmation />
         </ProtectedRoute>
       } />
       <Route path="/customer/orders" element={

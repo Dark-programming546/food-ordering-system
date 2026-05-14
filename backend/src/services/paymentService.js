@@ -7,17 +7,16 @@ class PaymentService {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  // Generate random success/failure (80% success for testing)
+  // Generate random success/failure (90% success for testing)
   static simulatePaymentResult() {
     const random = Math.random();
-    return random < 0.8; // 80% success rate for testing
+    return random < 0.9; // 90% success rate for testing
   }
 
   // Process Telebirr payment
   static async processTelebirrPayment(amount, phoneNumber, orderId) {
     console.log(`Processing Telebirr payment: ${amount} ETB from ${phoneNumber}`);
     
-    // Simulate API call delay
     await this.delay(2000);
     
     const isSuccess = this.simulatePaymentResult();
@@ -43,7 +42,6 @@ class PaymentService {
   static async processCBEBirrPayment(amount, phoneNumber, orderId) {
     console.log(`Processing CBEBirr payment: ${amount} ETB from ${phoneNumber}`);
     
-    // Simulate API call delay
     await this.delay(2000);
     
     const isSuccess = this.simulatePaymentResult();
@@ -71,7 +69,6 @@ class PaymentService {
     
     await this.delay(1000);
     
-    // Simulate verification
     return {
       success: true,
       status: 'completed',

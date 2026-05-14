@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { orderService } from '../../services/api';
-import { FiCheckCircle, FiPackage, FiClock, FiMapPin, FiCreditCard } from 'react-icons/fi';
+import { FiCheckCircle, FiPackage, FiClock, FiMapPin, FiCreditCard, FiAlertCircle } from 'react-icons/fi';
 
 const OrderConfirmation = () => {
   const { id } = useParams();
@@ -23,6 +23,21 @@ const OrderConfirmation = () => {
     }
   };
 
+  // Helper function to get payment status color and icon
+  const getPaymentStatusConfig = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'paid':
+      case 'completed':
+        return { color: 'text-green-600', bg: 'bg-green-100', icon: <FiCheckCircle className="w-4 h-4" />, label: 'Paid' };
+      case 'pending':
+        return { color: 'text-yellow-600', bg: 'bg-yellow-100', icon: <FiClock className="w-4 h-4" />, label: 'Pending' };
+      case 'failed':
+        return { color: 'text-red-600', bg: 'bg-red-100', icon: <FiAlertCircle className="w-4 h-4" />, label: 'Failed' };
+      default:
+        return { color: 'text-gray-600', bg: 'bg-gray-100', icon: <FiClock className="w-4 h-4" />, label: status || 'Pending' };
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -33,6 +48,8 @@ const OrderConfirmation = () => {
       </div>
     );
   }
+
+  const paymentConfig = getPaymentStatusConfig(order?.paymentStatus);
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
@@ -54,12 +71,30 @@ const OrderConfirmation = () => {
           </div>
 
           <div className="p-6 space-y-4">
-            {/* Status */}
+            {/* Order Status */}
             <div className="flex items-center gap-3">
               <FiPackage className="text-orange-500" />
               <div>
                 <p className="text-sm text-gray-500">Order Status</p>
                 <p className="font-semibold text-gray-800 capitalize">{order?.orderStatus}</p>
+              </div>
+            </div>
+
+            {/* Day 6: Payment Status - New Addition */}
+            <div className="flex items-center gap-3">
+              <div className={`${paymentConfig.bg} p-1.5 rounded-full`}>
+                {paymentConfig.icon}
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Payment Status</p>
+                <p className={`font-semibold capitalize ${paymentConfig.color}`}>
+                  {paymentConfig.label}
+                  {order?.transactionId && (
+                    <span className="text-xs text-gray-400 ml-2">
+                      ({order.transactionId})
+                    </span>
+                  )}
+                </p>
               </div>
             </div>
 
@@ -80,7 +115,11 @@ const OrderConfirmation = () => {
               <FiCreditCard className="text-orange-500" />
               <div>
                 <p className="text-sm text-gray-500">Payment Method</p>
-                <p className="text-gray-800 capitalize">{order?.paymentMethod}</p>
+                <p className="text-gray-800 capitalize">
+                  {order?.paymentMethod === 'cash' ? 'Cash on Delivery' : 
+                   order?.paymentMethod === 'telebirr' ? 'Telebirr' : 
+                   order?.paymentMethod === 'cbebirr' ? 'CBEBirr' : order?.paymentMethod}
+                </p>
               </div>
             </div>
           </div>

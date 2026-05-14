@@ -109,7 +109,7 @@ const orderSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ['cash', 'card', 'online'],
+    enum: ['cash', 'card', 'online', 'telebirr', 'cbebirr'],
     required: true
   },
   paymentStatus: {
@@ -144,11 +144,6 @@ const orderSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
-});
-
-// Update timestamp before saving
-orderSchema.pre('save', async function() {
-  this.updatedAt = Date.now();
 });
 
 // Method to update order status

@@ -25,6 +25,10 @@ const generateOrderNumber = () => {
 // @route   POST /api/orders/create
 // @access  Private
 const createOrder = async (req, res) => {
+  console.log('📦 createOrder STARTED');
+  console.log('Request body:', JSON.stringify(req.body, null, 2));
+  console.log('User ID:', req.user?.id);
+  
   try {
     const {
       deliveryAddress,
@@ -32,27 +36,38 @@ const createOrder = async (req, res) => {
       specialRequests
     } = req.body;
     
-    // Validate payment method
-    if (!paymentMethod || !['cash', 'card', 'online'].includes(paymentMethod)) {
+    console.log('1. Payment method:', paymentMethod);
+    
+    // ✅ FIXED: Validate payment method - Added Ethiopian payment methods
+    const validPaymentMethods = ['cash', 'card', 'online', 'telebirr', 'cbebirr'];
+    if (!paymentMethod || !validPaymentMethods.includes(paymentMethod)) {
+      console.log('2. Invalid payment method');
       return res.status(400).json({
         success: false,
-        message: 'Valid payment method is required (cash, card, online)'
+        message: 'Valid payment method is required (cash, telebirr, cbebirr)'
       });
     }
     
+    console.log('3. Getting cart...');
     // Get user's cart
     const cart = await Cart.findOne({ user: req.user.id });
+    console.log('4. Cart found:', cart ? 'Yes' : 'No');
     
     if (!cart || !cart.items || cart.items.length === 0) {
+      console.log('5. Cart is empty');
       return res.status(400).json({
         success: false,
         message: 'Cart is empty'
       });
     }
     
+    console.log('6. Getting restaurant...');
     // Get restaurant details
     const restaurant = await Restaurant.findById(cart.items[0].restaurant);
+    console.log('7. Restaurant found:', restaurant ? restaurant.name : 'No');
+    
     if (!restaurant) {
+      console.log('8. Restaurant not found');
       return res.status(404).json({
         success: false,
         message: 'Restaurant not found'
@@ -61,6 +76,7 @@ const createOrder = async (req, res) => {
     
     // Check if restaurant is open
     if (!restaurant.isOpen || !restaurant.isActive) {
+      console.log('9. Restaurant is closed');
       return res.status(400).json({
         success: false,
         message: `${restaurant.name} is currently closed`
@@ -69,15 +85,20 @@ const createOrder = async (req, res) => {
     
     // Check minimum order
     if (cart.totalAmount < restaurant.minimumOrder) {
+      console.log('10. Minimum order not met');
       return res.status(400).json({
         success: false,
         message: `Minimum order amount is $${restaurant.minimumOrder}. Your total is $${cart.totalAmount.toFixed(2)}`
       });
     }
     
+    console.log('11. Getting customer...');
     // Get customer details
     const customer = await User.findById(req.user.id);
+    console.log('12. Customer found:', customer ? customer.name : 'No');
+    
     if (!customer) {
+      console.log('13. Customer not found');
       return res.status(404).json({
         success: false,
         message: 'Customer not found'
@@ -87,17 +108,20 @@ const createOrder = async (req, res) => {
     // Use provided delivery address or customer's saved address
     const finalDeliveryAddress = deliveryAddress || customer.address;
     if (!finalDeliveryAddress || !finalDeliveryAddress.street) {
+      console.log('14. Delivery address missing');
       return res.status(400).json({
         success: false,
         message: 'Delivery address is required. Please provide an address or update your profile.'
       });
     }
     
+    console.log('15. Calculating totals...');
     // Calculate totals
     const subtotal = cart.totalAmount;
     const deliveryFee = restaurant.deliveryFee;
     const tax = subtotal * 0.08; // 8% tax
     const totalAmount = subtotal + deliveryFee + tax;
+    console.log('    Subtotal:', subtotal, 'Delivery:', deliveryFee, 'Tax:', tax, 'Total:', totalAmount);
     
     // Prepare order items
     const orderItems = cart.items.map(item => ({
@@ -108,6 +132,7 @@ const createOrder = async (req, res) => {
       specialInstructions: item.specialInstructions || ''
     }));
     
+    console.log('16. Creating order object...');
     // Create order
     const order = new Order({
       orderNumber: generateOrderNumber(),
@@ -134,28 +159,17 @@ const createOrder = async (req, res) => {
       estimatedDeliveryTime: new Date(Date.now() + restaurant.estimatedDeliveryTime * 60000)
     });
     
+    console.log('17. Saving order...');
     await order.save();
+    console.log('18. Order saved! ID:', order._id);
     
-    // Clear cart after order
+    console.log('19. Clearing cart...');
     await cart.clearCart();
+    console.log('20. Cart cleared!');
     
-    // 🔴 SOCKET.IO: Notify restaurant about new order in real-time
-    try {
-      if (socketManager) {
-        socketManager.notifyNewOrder(restaurant._id.toString(), {
-          id: order._id,
-          orderNumber: order.orderNumber,
-          customerName: order.customerName,
-          totalAmount: order.totalAmount,
-          items: order.items,
-          createdAt: order.createdAt
-        });
-        console.log(`✅ Real-time notification sent to restaurant ${restaurant.name}`);
-      }
-    } catch (socketError) {
-      console.error('Socket notification error:', socketError);
-    }
+    console.log(`21. ✅ Order created: ${order.orderNumber} for restaurant ${restaurant.name}`);
     
+    console.log('22. Sending response...');
     res.status(201).json({
       success: true,
       message: 'Order created successfully',
@@ -170,13 +184,16 @@ const createOrder = async (req, res) => {
         tax: order.tax,
         totalAmount: order.totalAmount,
         orderStatus: order.orderStatus,
+        paymentMethod: order.paymentMethod,
         timeline: order.timeline,
         estimatedDeliveryTime: order.estimatedDeliveryTime,
         createdAt: order.createdAt
       }
     });
+    console.log('23. Response sent successfully!');
   } catch (error) {
-    console.error('Create order error:', error);
+    console.error('❌ Create order error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Server error',

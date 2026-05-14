@@ -6,8 +6,10 @@ import { orderService } from '../../services/api';
 import { FiArrowLeft, FiMapPin, FiCreditCard, FiSmartphone, FiDollarSign, FiCheckCircle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
+import PaymentModal from '../../components/common/PaymentModal';
+
 const Checkout = () => {
-  const { cart, cartTotal, getCartSummary, clearCart } = useCart();
+  const { cart, getCartSummary, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   const summary = getCartSummary();
@@ -22,21 +24,25 @@ const Checkout = () => {
   const [specialRequests, setSpecialRequests] = useState('');
   const [loading, setLoading] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
+  
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [pendingOrderId, setPendingOrderId] = useState(null);
+  const [pendingOrderTotal, setPendingOrderTotal] = useState(0);
+  
   const hasSynced = useRef(false);
 
-  // Force reload to sync cart
   useEffect(() => {
     const savedCart = localStorage.getItem('cart');
     if (savedCart && cart.length === 0) {
       window.location.reload();
     }
-  }, []);
+  }, [cart]);
 
   useEffect(() => {
     if (cart.length === 0 && !orderPlaced) {
       navigate('/cart');
     }
-  }, [cart, navigate]);
+  }, [cart, navigate, orderPlaced]);
 
   const handleAddressChange = (e) => {
     setAddress({ ...address, [e.target.name]: e.target.value });
@@ -74,6 +80,25 @@ const Checkout = () => {
     }
   };
 
+  // Handle payment success - navigate directly to confirmation
+  const handlePaymentSuccess = async (payment) => {
+    console.log('💰 Payment success, orderId:', pendingOrderId);
+    
+    if (!pendingOrderId) {
+      console.error('No pending order ID!');
+      toast.error('Error: Order ID not found');
+      return;
+    }
+    
+    clearCart();
+    navigate(`/order-confirmation/${pendingOrderId}`);
+  };
+
+  const handlePaymentModalClose = () => {
+    setShowPaymentModal(false);
+    // Don't clear pendingOrderId immediately, we need it for navigation
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -96,6 +121,7 @@ const Checkout = () => {
       await syncCartToBackend();
       
       const orderData = {
+        deliveryAddress: address,
         paymentMethod: paymentMethod,
         specialRequests: specialRequests
       };
@@ -103,18 +129,28 @@ const Checkout = () => {
       const response = await orderService.create(orderData);
       
       if (response.data.success) {
-        setOrderPlaced(true);
-        toast.success('Order placed successfully!');
-        clearCart();
-        navigate(`/order-confirmation/${response.data.order.id}`);
+        const order = response.data.order;
+        console.log('✅ Order created, ID:', order.id);
+        console.log('✅ Order number:', order.orderNumber);
+        
+        if (paymentMethod === 'cash') {
+          setOrderPlaced(true);
+          toast.success('Order placed successfully!');
+          clearCart();
+          navigate(`/order-confirmation/${order.id}`);
+        } else {
+          // Store order ID first, then show modal
+          setPendingOrderId(order.id);
+          setPendingOrderTotal(parseFloat(summary.total));
+          setShowPaymentModal(true);
+          setLoading(false);
+        }
       }
     } catch (error) {
       console.error('Order error:', error);
-      // ONLY ONE TOAST - from here
       const message = error.response?.data?.message || 'Failed to place order';
       toast.error(message);
       hasSynced.current = false;
-    } finally {
       setLoading(false);
     }
   };
@@ -317,6 +353,15 @@ const Checkout = () => {
           </div>
         </div>
       </div>
+
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={handlePaymentModalClose}
+        orderId={pendingOrderId}
+        amount={pendingOrderTotal}
+        paymentMethod={paymentMethod}
+        onSuccess={handlePaymentSuccess}
+      />
     </div>
   );
 };

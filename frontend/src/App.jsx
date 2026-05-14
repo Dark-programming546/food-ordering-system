@@ -52,6 +52,9 @@ function AppRoutes() {
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/restaurant/:id" element={<RestaurantDetail />} />
       
+      {/* ✅ ORDER CONFIRMATION - NOW PUBLIC (no login required) */}
+      <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
+      
       {/* Customer Routes */}
       <Route path="/customer/dashboard" element={
         <ProtectedRoute allowedRoles={['customer']}>
@@ -66,11 +69,6 @@ function AppRoutes() {
       <Route path="/checkout" element={
         <ProtectedRoute allowedRoles={['customer']}>
           <Checkout />
-        </ProtectedRoute>
-      } />
-      <Route path="/order-confirmation/:id" element={
-        <ProtectedRoute allowedRoles={['customer']}>
-          <OrderConfirmation />
         </ProtectedRoute>
       } />
       <Route path="/customer/orders" element={

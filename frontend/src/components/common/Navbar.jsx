@@ -1,18 +1,40 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
-import { FiShoppingCart, FiUser, FiLogOut, FiHome, FiMenu, FiX } from 'react-icons/fi';
+import {
+  FiShoppingCart, FiUser, FiLogOut, FiMenu, FiX,
+  FiHome, FiPackage, FiSettings, FiChevronDown, FiTruck
+} from 'react-icons/fi';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout, isAdmin, isRestaurant, isDelivery } = useAuth();
   const { cartCount } = useCart();
   const navigate = useNavigate();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
   };
 
   const getDashboardLink = () => {
@@ -22,69 +44,130 @@ const Navbar = () => {
     return '/customer/dashboard';
   };
 
-  return (
-    <nav className="bg-white shadow-lg sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
-              <span className="text-2xl">🍕</span>
-              <span className="font-bold text-xl text-primary-600">FoodOrder</span>
-            </Link>
-          </div>
+  const isCustomer = !isAdmin && !isRestaurant && !isDelivery;
+  const isActive = (path) => location.pathname === path;
 
-          {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-4">
-            <Link to="/" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+  return (
+    <nav className="bg-white shadow-md sticky top-0 z-50 border-b border-gray-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2 group">
+            <div className="w-9 h-9 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-orange-200 transition-shadow">
+              <span className="text-lg">🍕</span>
+            </div>
+            <span className="font-extrabold text-xl text-gray-900">
+              Food<span className="text-orange-500">Order</span>
+            </span>
+          </Link>
+
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-1">
+            <Link
+              to="/"
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/') ? 'text-orange-500 bg-orange-50' : 'text-gray-600 hover:text-orange-500 hover:bg-orange-50'
+              }`}
+            >
               Home
             </Link>
-            
+
+            {isAuthenticated && (
+              <Link
+                to={getDashboardLink()}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  location.pathname.includes('dashboard') ? 'text-orange-500 bg-orange-50' : 'text-gray-600 hover:text-orange-500 hover:bg-orange-50'
+                }`}
+              >
+                Dashboard
+              </Link>
+            )}
+
+            {isAuthenticated && isCustomer && (
+              <Link
+                to="/customer/orders"
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/customer/orders') ? 'text-orange-500 bg-orange-50' : 'text-gray-600 hover:text-orange-500 hover:bg-orange-50'
+                }`}
+              >
+                My Orders
+              </Link>
+            )}
+          </div>
+
+          {/* Right Side */}
+          <div className="hidden md:flex items-center gap-3">
             {isAuthenticated ? (
               <>
-                <Link to={getDashboardLink()} className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                  Dashboard
-                </Link>
-                
-                {!isRestaurant && !isDelivery && !isAdmin && (
-                  <Link to="/cart" className="relative text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                    <FiShoppingCart className="inline text-xl" />
-                    <span className="ml-1">Cart</span>
+                {/* Cart - customers only */}
+                {isCustomer && (
+                  <Link to="/cart" className="relative p-2 text-gray-600 hover:text-orange-500 transition-colors">
+                    <FiShoppingCart size={22} />
                     {cartCount > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                        {cartCount}
+                      <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 animate-bounce">
+                        {cartCount > 99 ? '99+' : cartCount}
                       </span>
                     )}
                   </Link>
                 )}
-                
-                <div className="relative group">
-                  <button className="flex items-center space-x-1 text-gray-700 hover:text-primary-600 px-3 py-2">
-                    <FiUser />
-                    <span>{user?.name?.split(' ')[0]}</span>
+
+                {/* User Dropdown */}
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                      {user?.name?.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-sm font-medium text-gray-700">{user?.name?.split(' ')[0]}</span>
+                    <FiChevronDown size={14} className={`text-gray-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
-                  <div className="absolute right-0 w-48 bg-white rounded-md shadow-lg py-1 mt-2 hidden group-hover:block">
-                    <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                      Profile
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                    >
-                      <FiLogOut className="inline mr-2" />
-                      Logout
-                    </button>
-                  </div>
+
+                  {dropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
+                      <div className="px-4 py-2 border-b border-gray-100">
+                        <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
+                        <p className="text-xs text-gray-400 capitalize">{user?.role}</p>
+                      </div>
+                      <Link
+                        to="/profile"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <FiUser size={14} /> Profile
+                      </Link>
+                      <Link
+                        to={getDashboardLink()}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <FiSettings size={14} /> Dashboard
+                      </Link>
+                      <div className="border-t border-gray-100 mt-1">
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                        >
+                          <FiLogOut size={14} /> Logout
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
               <>
-                <Link to="/login" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                <Link
+                  to="/login"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-orange-500 transition-colors"
+                >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
+                  className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm font-semibold rounded-lg hover:from-orange-600 hover:to-red-600 transition-all shadow-sm hover:shadow-orange-200"
                 >
                   Sign Up
                 </Link>
@@ -92,52 +175,71 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
+          {/* Mobile: cart + hamburger */}
+          <div className="md:hidden flex items-center gap-2">
+            {isAuthenticated && isCustomer && (
+              <Link to="/cart" className="relative p-2 text-gray-600">
+                <FiShoppingCart size={22} />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+            )}
             <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="text-gray-700 hover:text-primary-600"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="p-2 text-gray-600 hover:text-orange-500 transition-colors"
             >
-              {isMobileMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+              {mobileOpen ? <FiX size={24} /> : <FiMenu size={24} />}
             </button>
           </div>
         </div>
       </div>
 
       {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-t">
-          <div className="px-2 pt-2 pb-3 space-y-1">
-            <Link to="/" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary-600">
-              Home
+      {mobileOpen && (
+        <div className="md:hidden bg-white border-t border-gray-100 shadow-lg">
+          <div className="px-4 py-3 space-y-1">
+            <Link to="/" className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-700 hover:bg-orange-50 hover:text-orange-500 font-medium">
+              <FiHome size={16} /> Home
             </Link>
+
             {isAuthenticated ? (
               <>
-                <Link to={getDashboardLink()} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary-600">
-                  Dashboard
+                <Link to={getDashboardLink()} className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-700 hover:bg-orange-50 hover:text-orange-500 font-medium">
+                  <FiSettings size={16} /> Dashboard
                 </Link>
-                {/* Cart link in mobile menu */}
-                {!isRestaurant && !isDelivery && !isAdmin && (
-                  <Link to="/cart" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary-600">
-                    Cart {cartCount > 0 && `(${cartCount})`}
+                {isCustomer && (
+                  <Link to="/customer/orders" className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-700 hover:bg-orange-50 hover:text-orange-500 font-medium">
+                    <FiPackage size={16} /> My Orders
                   </Link>
                 )}
-                <button
-                  onClick={handleLogout}
-                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600"
-                >
-                  Logout
-                </button>
+                <Link to="/profile" className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-700 hover:bg-orange-50 hover:text-orange-500 font-medium">
+                  <FiUser size={16} /> Profile
+                </Link>
+                <div className="border-t border-gray-100 pt-2 mt-2">
+                  <div className="px-3 py-2 mb-2">
+                    <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
+                    <p className="text-xs text-gray-400 capitalize">{user?.role}</p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-red-500 hover:bg-red-50 font-medium"
+                  >
+                    <FiLogOut size={16} /> Logout
+                  </button>
+                </div>
               </>
             ) : (
-              <>
-                <Link to="/login" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary-600">
+              <div className="flex flex-col gap-2 pt-2">
+                <Link to="/login" className="px-3 py-2 text-center rounded-lg border border-gray-200 text-gray-700 font-medium hover:border-orange-300">
                   Login
                 </Link>
-                <Link to="/register" className="block px-3 py-2 rounded-md text-base font-medium text-primary-600">
-                  Sign Up
+                <Link to="/register" className="px-3 py-2 text-center rounded-lg bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold">
+                  Sign Up Free
                 </Link>
-              </>
+              </div>
             )}
           </div>
         </div>

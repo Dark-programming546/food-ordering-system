@@ -1,7 +1,9 @@
 export const formatPrice = (price) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'ETB',
-    minimumFractionDigits: 2,
-  }).format(price);
+  const num = parseFloat(price) || 0;
+  return `Br ${num.toFixed(2)}`;
+};
+
+export const formatPriceShort = (price) => {
+  const num = parseFloat(price) || 0;
+  return `Br ${num % 1 === 0 ? num.toFixed(0) : num.toFixed(2)}`;
 };

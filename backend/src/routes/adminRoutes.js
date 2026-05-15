@@ -7,15 +7,15 @@ const {
   updateUserRole,
   toggleUserStatus,
   deleteUser,
-  getAllRestaurants,
-  approveRestaurant,
-  blockRestaurant,
   getAllOrders,
-  getSalesReport
+  getSalesReport,
+  createDeliveryStaff,
+  getDeliveryStaff,
+  getRestaurantSettings,
+  updateRestaurantSettings
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middleware/auth');
 
-// All admin routes require authentication and admin role
 router.use(protect);
 router.use(authorize('admin'));
 
@@ -29,10 +29,15 @@ router.put('/users/:id/role', updateUserRole);
 router.put('/users/:id/status', toggleUserStatus);
 router.delete('/users/:id', deleteUser);
 
-// Restaurant management
-router.get('/restaurants', getAllRestaurants);
-router.put('/restaurants/:id/approve', approveRestaurant);
-router.put('/restaurants/:id/block', blockRestaurant);
+// Delivery staff management (owner adds/removes delivery people)
+router.get('/delivery-staff', getDeliveryStaff);
+router.post('/delivery-staff', createDeliveryStaff);
+router.put('/delivery-staff/:id/status', toggleUserStatus);
+router.delete('/delivery-staff/:id', deleteUser);
+
+// Restaurant settings (the single Gozamen restaurant)
+router.get('/restaurant-settings', getRestaurantSettings);
+router.put('/restaurant-settings', updateRestaurantSettings);
 
 // Order management
 router.get('/orders', getAllOrders);

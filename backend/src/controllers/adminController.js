@@ -488,6 +488,81 @@ const getSalesReport = async (req, res) => {
   }
 };
 
+// @desc    Create delivery staff (admin only)
+// @route   POST /api/admin/delivery-staff
+// @access  Private (Admin only)
+const createDeliveryStaff = async (req, res) => {
+  try {
+    const { name, email, password, phone } = req.body;
+
+    if (!name || !email || !password || !phone) {
+      return res.status(400).json({ success: false, message: 'All fields are required' });
+    }
+
+    const exists = await User.findOne({ email });
+    if (exists) {
+      return res.status(400).json({ success: false, message: 'Email already in use' });
+    }
+
+    const staff = await User.create({
+      name, email, password, phone,
+      role: 'delivery',
+      isEmailVerified: true,
+      isActive: true
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Delivery staff created successfully',
+      user: { id: staff._id, name: staff.name, email: staff.email, phone: staff.phone, role: staff.role }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get all delivery staff
+// @route   GET /api/admin/delivery-staff
+// @access  Private (Admin only)
+const getDeliveryStaff = async (req, res) => {
+  try {
+    const staff = await User.find({ role: 'delivery' }).select('-password').sort({ createdAt: -1 });
+    res.status(200).json({ success: true, count: staff.length, staff });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get restaurant settings (the single restaurant)
+// @route   GET /api/admin/restaurant-settings
+// @access  Private (Admin only)
+const getRestaurantSettings = async (req, res) => {
+  try {
+    const restaurant = await Restaurant.findOne();
+    if (!restaurant) {
+      return res.status(404).json({ success: false, message: 'Restaurant not found' });
+    }
+    res.status(200).json({ success: true, restaurant });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Update restaurant settings
+// @route   PUT /api/admin/restaurant-settings
+// @access  Private (Admin only)
+const updateRestaurantSettings = async (req, res) => {
+  try {
+    const restaurant = await Restaurant.findOneAndUpdate({}, req.body, { new: true, runValidators: true });
+    if (!restaurant) {
+      return res.status(404).json({ success: false, message: 'Restaurant not found' });
+    }
+    res.status(200).json({ success: true, message: 'Settings updated', restaurant });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getAllUsers,
@@ -499,5 +574,9 @@ module.exports = {
   approveRestaurant,
   blockRestaurant,
   getAllOrders,
-  getSalesReport
+  getSalesReport,
+  createDeliveryStaff,
+  getDeliveryStaff,
+  getRestaurantSettings,
+  updateRestaurantSettings
 };

@@ -1,112 +1,202 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay, Pagination, Navigation, EffectFade } from 'swiper/modules';
-
+import { Autoplay, Pagination, EffectFade } from 'swiper/modules';
 import { useAuth } from '../../context/AuthContext';
-import { restaurantService } from '../../services/restaurantService';
+import api from '../../services/api';
 import {
-  FiArrowRight,
-  FiStar,
-  FiClock,
-  FiSearch,
-  FiTruck,
-  FiShield,
-  FiCreditCard
+  FiStar, FiClock, FiSearch, FiTruck, FiShield,
+  FiAward, FiTag, FiArrowRight, FiMapPin, FiPhone,
+  FiChevronRight, FiShoppingCart, FiCheckCircle
 } from 'react-icons/fi';
 
 import 'swiper/css';
 import 'swiper/css/pagination';
-import 'swiper/css/navigation';
 import 'swiper/css/effect-fade';
+
+const HERO_SLIDES = [
+  {
+    title: 'Authentic Ethiopian Cuisine',
+    subtitle: 'Experience the rich flavors of Gozamen Restaurant — delivered to your door',
+    cta: 'Order Now',
+    image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=1600&auto=format',
+    badge: '🔥 Fresh & Authentic',
+  },
+  {
+    title: 'Traditional Injera & Tibs',
+    subtitle: 'Handcrafted with love using the finest Ethiopian spices and ingredients',
+    cta: 'View Menu',
+    image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600&auto=format',
+    badge: '⚡ 30–40 Min Delivery',
+  },
+  {
+    title: 'Pay with Telebirr or CBEBirr',
+    subtitle: 'Fast, secure Ethiopian mobile payment — no cash needed',
+    cta: 'Get Started',
+    image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=1600&auto=format',
+    badge: '💳 Easy Payments',
+  },
+];
+
+const FEATURES = [
+  { icon: <FiTruck />, title: 'Fast Delivery', desc: '30–40 min average', color: 'text-orange-500 bg-orange-50' },
+  { icon: <FiShield />, title: 'Secure Payments', desc: 'Telebirr & CBEBirr', color: 'text-blue-500 bg-blue-50' },
+  { icon: <FiAward />, title: 'Top Quality', desc: 'Fresh ingredients daily', color: 'text-yellow-500 bg-yellow-50' },
+  { icon: <FiTag />, title: 'Best Prices', desc: 'Affordable Ethiopian food', color: 'text-green-500 bg-green-50' },
+];
+
+const WHY_US = [
+  { icon: '🌿', title: 'Fresh Daily', desc: 'All ingredients sourced fresh every morning' },
+  { icon: '👨‍🍳', title: 'Expert Chefs', desc: 'Trained in authentic Ethiopian cooking' },
+  { icon: '📦', title: 'Safe Packaging', desc: 'Hygienic, spill-proof containers' },
+  { icon: '⭐', title: '4.8 Rating', desc: 'Loved by hundreds of customers' },
+];
+
+const MenuItemCard = ({ item }) => (
+  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow flex">
+    <div className="w-24 h-24 shrink-0 bg-gray-100 overflow-hidden">
+      {item.image ? (
+        <img
+          src={item.image}
+          alt={item.name}
+          className="w-full h-full object-cover"
+          onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=200&auto=format'; }}
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center text-3xl">🍽️</div>
+      )}
+    </div>
+    <div className="flex-1 p-3 flex flex-col justify-between">
+      <div>
+        <div className="flex items-center gap-1.5">
+          <p className="font-semibold text-gray-900 text-sm">{item.name}</p>
+          {item.isVegetarian && (
+            <span className="text-xs bg-green-100 text-green-600 px-1.5 py-0.5 rounded-full">Veg</span>
+          )}
+        </div>
+        {item.description && (
+          <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{item.description}</p>
+        )}
+      </div>
+      <p className="font-bold text-orange-500 text-sm mt-1">Br {item.price?.toFixed(2)}</p>
+    </div>
+  </div>
+);
+
+const SkeletonItem = () => (
+  <div className="bg-white rounded-xl border border-gray-100 flex animate-pulse">
+    <div className="w-24 h-24 bg-gray-200 shrink-0" />
+    <div className="flex-1 p-3 space-y-2">
+      <div className="h-4 bg-gray-200 rounded w-2/3" />
+      <div className="h-3 bg-gray-200 rounded w-full" />
+      <div className="h-4 bg-gray-200 rounded w-1/3" />
+    </div>
+  </div>
+);
 
 const Home = () => {
   const { isAuthenticated } = useAuth();
-  const [featuredRestaurants, setFeaturedRestaurants] = useState([]);
+  const navigate = useNavigate();
+  const [restaurant, setRestaurant] = useState(null);
+  const [menuByCategory, setMenuByCategory] = useState({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCuisine, setSelectedCuisine] = useState('');
-  const [cuisines, setCuisines] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
-  const heroSlides = [
-    {
-      title: "Craving Something Delicious?",
-      subtitle: "Order from the best restaurants in your city",
-      image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600&auto=format"
-    },
-    {
-      title: "Fresh Food, Fast Delivery",
-      subtitle: "Hot meals delivered right to your doorstep",
-      image: "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=1600&auto=format"
-    },
-    {
-      title: "Special Discounts Every Day",
-      subtitle: "Save up to 50% on your favorite dishes",
-      image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=1600&auto=format"
-    }
-  ];
-
-  const features = [
-    { icon: <FiTruck />, title: "Fast Delivery", desc: "Get food in 30–40 minutes" },
-    { icon: <FiShield />, title: "Secure Payments", desc: "Telebirr, Cash, CBEBirr" },
-    { icon: <FiStar />, title: "Best Quality", desc: "Top restaurants only" },
-    { icon: <FiCreditCard />, title: "Best Prices", desc: "Daily discounts available" }
-  ];
-
-  const categories = [
-    { name: "Pizza", icon: "🍕" }, { name: "Burgers", icon: "🍔" },
-    { name: "Sushi", icon: "🍣" }, { name: "Indian", icon: "🍛" },
-    { name: "Chinese", icon: "🥡" }, { name: "Italian", icon: "🍝" },
-    { name: "Mexican", icon: "🌮" }, { name: "Desserts", icon: "🍰" }
-  ];
-
-  const fetchRestaurants = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const params = {};
-      if (searchTerm) params.search = searchTerm;
-      if (selectedCuisine) params.cuisine = selectedCuisine;
+      // Get the single restaurant
+      const restRes = await api.get('/restaurants');
+      const restaurants = restRes.data?.restaurants || [];
+      if (restaurants.length === 0) { setLoading(false); return; }
 
-      const data = await restaurantService.getAll(params);
-      
-      // Fix: Pulling restaurants correctly from your API response structure
-      const restaurants = data?.restaurants || data?.data?.restaurants || data?.data || [];
-      setFeaturedRestaurants(restaurants);
+      const r = restaurants[0];
+      setRestaurant(r);
 
-      const allCuisines = new Set();
-      restaurants.forEach(r => {
-        if (Array.isArray(r.cuisine)) {
-          r.cuisine.forEach(c => allCuisines.add(c));
-        } else if (r.cuisine) {
-          allCuisines.add(r.cuisine);
-        }
+      // Get its menu
+      const menuRes = await api.get(`/menu/restaurant/${r._id}`);
+      const items = menuRes.data?.allItems || [];
+
+      // Group by category
+      const grouped = {};
+      items.forEach(item => {
+        if (!grouped[item.category]) grouped[item.category] = [];
+        grouped[item.category].push(item);
       });
-      setCuisines([...allCuisines]);
-    } catch (err) {
-      console.error("Fetch Error:", err);
-      setFeaturedRestaurants([]);
+      setMenuByCategory(grouped);
+    } catch {
+      // silent
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleOrderNow = () => {
+    if (restaurant) navigate(`/restaurant/${restaurant._id}`);
   };
 
-  useEffect(() => {
-    fetchRestaurants();
-  }, [searchTerm, selectedCuisine]);
+  const categories = ['all', ...Object.keys(menuByCategory)];
+
+  const filteredMenu = Object.entries(menuByCategory).reduce((acc, [cat, items]) => {
+    if (selectedCategory !== 'all' && selectedCategory !== cat) return acc;
+    const filtered = searchTerm
+      ? items.filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase()))
+      : items;
+    if (filtered.length > 0) acc[cat] = filtered;
+    return acc;
+  }, {});
+
+  const totalItems = Object.values(filteredMenu).flat().length;
 
   return (
-    <div className="overflow-x-hidden bg-gray-50 min-h-screen">
-      {/* HERO */}
-      <section className="relative h-[500px] md:h-[600px]">
-        <Swiper modules={[Autoplay, Pagination, Navigation, EffectFade]} effect="fade" autoplay={{ delay: 5000 }} pagination={{ clickable: true }} navigation loop className="h-full">
-          {heroSlides.map((slide, i) => (
+    <div className="bg-gray-50 min-h-screen overflow-x-hidden">
+
+      {/* ── HERO ── */}
+      <section className="relative h-[520px] md:h-[620px]">
+        <Swiper
+          modules={[Autoplay, Pagination, EffectFade]}
+          effect="fade"
+          autoplay={{ delay: 5000, disableOnInteraction: false }}
+          pagination={{ clickable: true }}
+          loop
+          className="h-full"
+        >
+          {HERO_SLIDES.map((slide, i) => (
             <SwiperSlide key={i}>
-              <img src={slide.image} className="w-full h-full object-cover" alt="Hero" />
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-center text-white">
-                <div className="px-4">
-                  <h1 className="text-4xl md:text-6xl font-bold mb-4">{slide.title}</h1>
-                  <p className="mb-6">{slide.subtitle}</p>
-                  <Link className="bg-orange-500 px-8 py-3 rounded-full font-bold">Get Started</Link>
+              <div className="relative h-full">
+                <img src={slide.image} className="w-full h-full object-cover" alt={slide.title} />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 to-transparent" />
+                <div className="absolute inset-0 flex items-center">
+                  <div className="max-w-7xl mx-auto px-6 w-full">
+                    <div className="max-w-xl">
+                      <span className="inline-block bg-orange-500/90 text-white text-sm font-semibold px-3 py-1 rounded-full mb-4">
+                        {slide.badge}
+                      </span>
+                      <h1 className="text-4xl md:text-6xl font-extrabold text-white leading-tight mb-4">
+                        {slide.title}
+                      </h1>
+                      <p className="text-white/80 text-lg mb-8">{slide.subtitle}</p>
+                      <div className="flex gap-3 flex-wrap">
+                        <button
+                          onClick={handleOrderNow}
+                          className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-3.5 rounded-full font-bold text-lg hover:from-orange-600 hover:to-red-600 transition-all shadow-lg hover:shadow-orange-500/30 hover:-translate-y-0.5"
+                        >
+                          {slide.cta} <FiArrowRight />
+                        </button>
+                        {!isAuthenticated && (
+                          <Link
+                            to="/register"
+                            className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/30 text-white px-6 py-3.5 rounded-full font-semibold hover:bg-white/25 transition"
+                          >
+                            Sign Up Free
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </SwiperSlide>
@@ -114,120 +204,279 @@ const Home = () => {
         </Swiper>
       </section>
 
-      {/* SEARCH */}
-      <div className="sticky top-0 bg-white shadow-md py-4 z-20">
-        <div className="max-w-7xl mx-auto px-4 flex gap-4">
-          <div className="flex-1 relative">
-            <FiSearch className="absolute left-3 top-3 text-gray-400" />
-            <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 py-2 border rounded-lg outline-none" placeholder="Search restaurants..." />
+      {/* ── RESTAURANT INFO BANNER ── */}
+      {restaurant && (
+        <section className="bg-white border-b shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl overflow-hidden bg-orange-50 border border-orange-100 shrink-0">
+                <img
+                  src={restaurant.images?.logo || 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=100&auto=format'}
+                  alt="Gozamen"
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=100&auto=format'; }}
+                />
+              </div>
+              <div>
+                <h2 className="font-extrabold text-gray-900 text-lg">{restaurant.name}</h2>
+                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mt-0.5">
+                  <span className="flex items-center gap-1">
+                    <FiStar className="text-yellow-400 fill-yellow-400" size={13} />
+                    {restaurant.rating?.toFixed(1) || '4.8'}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <FiClock size={13} className="text-orange-400" />
+                    {restaurant.estimatedDeliveryTime || 35} min
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <FiMapPin size={13} className="text-orange-400" />
+                    {restaurant.address?.city}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <FiTruck size={13} className="text-orange-400" />
+                    Br {restaurant.deliveryFee} delivery
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${restaurant.isOpen ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                {restaurant.isOpen ? '● Open Now' : '● Closed'}
+              </span>
+              <button
+                onClick={handleOrderNow}
+                className="flex items-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-orange-600 transition text-sm"
+              >
+                <FiShoppingCart size={14} /> Order Now
+              </button>
+            </div>
           </div>
-          <select value={selectedCuisine} onChange={(e) => setSelectedCuisine(e.target.value)} className="border rounded-lg px-4 outline-none">
-            <option value="">All Cuisines</option>
-            {cuisines.map((c, i) => <option key={i} value={c}>{c}</option>)}
-          </select>
-        </div>
-      </div>
+        </section>
+      )}
 
-      {/* FEATURED RESTAURANTS */}
-      <section className="py-16">
+      {/* ── FEATURES ── */}
+      <section className="py-10 bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+          {FEATURES.map((f, i) => (
+            <div key={i} className="flex items-center gap-3 p-4 rounded-xl hover:bg-gray-50 transition-colors">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${f.color}`}>
+                {f.icon}
+              </div>
+              <div>
+                <p className="font-semibold text-gray-800 text-sm">{f.title}</p>
+                <p className="text-xs text-gray-500">{f.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── MENU PREVIEW ── */}
+      <section className="py-12">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-8 text-gray-800">Featured Restaurants</h2>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-3xl font-extrabold text-gray-900">Our Menu</h2>
+              <p className="text-gray-500 mt-1">
+                {loading ? 'Loading...' : `${Object.values(menuByCategory).flat().length} items available`}
+              </p>
+            </div>
+            {restaurant && (
+              <Link
+                to={`/restaurant/${restaurant._id}`}
+                className="flex items-center gap-1.5 text-orange-500 hover:text-orange-600 font-semibold text-sm"
+              >
+                Full Menu <FiChevronRight size={16} />
+              </Link>
+            )}
+          </div>
+
+          {/* Search + Category Filter */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <div className="relative flex-1">
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
+                placeholder="Search menu items..."
+              />
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                    selectedCategory === cat
+                      ? 'bg-orange-500 text-white shadow-sm'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'
+                  }`}
+                >
+                  {cat === 'all' ? 'All Items' : cat}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {loading ? (
-            <div className="grid md:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => <div key={i} className="h-80 bg-gray-200 animate-pulse rounded-xl" />)}
+            <div className="space-y-6">
+              {[...Array(2)].map((_, si) => (
+                <div key={si}>
+                  <div className="h-5 bg-gray-200 rounded w-32 mb-3 animate-pulse" />
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {[...Array(4)].map((_, i) => <SkeletonItem key={i} />)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : totalItems > 0 ? (
+            <div className="space-y-8">
+              {Object.entries(filteredMenu).map(([category, items]) => (
+                <div key={category}>
+                  <h3 className="text-xl font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-orange-500 rounded-full inline-block" />
+                    {category}
+                    <span className="text-sm font-normal text-gray-400">({items.length})</span>
+                  </h3>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {items.map(item => <MenuItemCard key={item._id} item={item} />)}
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
-            <div className="grid md:grid-cols-3 gap-6">
-              {featuredRestaurants.length > 0 ? (
-                // Force display of exactly 6 slots
-                Array.from({ length: 6 }).map((_, i) => {
-                  const r = featuredRestaurants[i % featuredRestaurants.length];
-                  
-                  // Meal placeholder images in case the database link is broken or "Wok & Roll" has an issue
-                  const fallbackMeals = [
-                    "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500", // Pizza
-                    "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500", // Burger
-                    "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=500", // Sushi
-                    "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=500", // Pasta
-                    "https://images.unsplash.com/photo-1505253758473-96b7015fcd40?w=500", // Indian
-                    "https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=500"  // Tacos
-                  ];
+            <div className="text-center py-16 bg-white rounded-xl border border-gray-100">
+              <div className="text-5xl mb-4">🍽️</div>
+              <h3 className="text-lg font-bold text-gray-700 mb-2">No items found</h3>
+              <button
+                onClick={() => { setSearchTerm(''); setSelectedCategory('all'); }}
+                className="text-orange-500 font-semibold hover:underline"
+              >
+                Clear search
+              </button>
+            </div>
+          )}
 
-                  // Priority: 1. DB cover, 2. DB image, 3. Fallback list
-                  const coverImage = r.images?.cover || r.image || fallbackMeals[i % fallbackMeals.length];
-
-                  // 🔥 ONLY CHANGE: Added <Link> wrapper around the card
-                  return (
-                    <Link to={`/restaurant/${r._id}`} key={i} className="block transition-transform hover:scale-[1.02]">
-                      <div className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col h-full border border-gray-100">
-                        <div className="h-48 w-full overflow-hidden bg-gray-100">
-                          <img 
-                            src={coverImage} 
-                            className="w-full h-full object-cover" 
-                            alt={r.name || "Restaurant"}
-                            onError={(e) => { e.target.src = fallbackMeals[i % fallbackMeals.length]; }}
-                          />
-                        </div>
-                        <div className="p-5 flex-1 flex flex-col">
-                          <h3 className="font-bold text-xl mb-1 text-gray-800">{r.name || "Delicious Eats"}</h3>
-                          <p className="text-sm text-gray-500 mb-4">
-                            {Array.isArray(r.cuisine) ? r.cuisine.join(", ") : (r.cuisine || "Specialty Food")}
-                          </p>
-                          <div className="mt-auto pt-3 border-t flex justify-between text-sm font-medium text-gray-600">
-                            <span className="flex items-center gap-1"><FiClock className="text-orange-500" /> {r.deliveryTime || "30-40 min"}</span>
-                            <span className="flex items-center gap-1"><FiStar className="text-yellow-500" /> {r.rating || 4.7}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })
-              ) : (
-                <div className="col-span-full text-center py-10">No restaurants found in Database.</div>
-              )}
+          {/* View Full Menu CTA */}
+          {restaurant && !loading && totalItems > 0 && (
+            <div className="text-center mt-10">
+              <Link
+                to={`/restaurant/${restaurant._id}`}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-3.5 rounded-full font-bold text-lg hover:from-orange-600 hover:to-red-600 transition-all shadow-lg hover:shadow-orange-500/25"
+              >
+                <FiShoppingCart /> Order from Full Menu
+              </Link>
             </div>
           )}
         </div>
       </section>
 
-      {/* FEATURES */}
-      <section className="py-16 bg-white border-y">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-6">
-          {features.map((f, i) => (
-            <div key={i} className="text-center">
-              <div className="text-orange-500 text-3xl mb-2 flex justify-center">{f.icon}</div>
-              <h3 className="font-bold text-gray-800">{f.title}</h3>
-              <p className="text-sm text-gray-500">{f.desc}</p>
-            </div>
-          ))}
+      {/* ── WHY CHOOSE US ── */}
+      <section className="py-14 bg-white border-y">
+        <div className="max-w-7xl mx-auto px-4">
+          <h2 className="text-3xl font-extrabold text-gray-900 text-center mb-10">Why Choose Gozamen?</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {WHY_US.map((w, i) => (
+              <div key={i} className="text-center p-5 rounded-2xl hover:bg-orange-50 transition-colors">
+                <div className="text-4xl mb-3">{w.icon}</div>
+                <h3 className="font-bold text-gray-800 mb-1">{w.title}</h3>
+                <p className="text-sm text-gray-500">{w.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* CATEGORIES */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-4 md:grid-cols-8 gap-4 text-center">
-          {categories.map((c, i) => (
-            <div key={i} className="bg-white p-3 rounded-lg shadow-sm">
-              <div className="text-2xl mb-1">{c.icon}</div>
-              <p className="text-xs font-semibold">{c.name}</p>
+      {/* ── CTA BANNER ── */}
+      <section className="relative py-24 overflow-hidden">
+        <img
+          src="https://images.unsplash.com/photo-1481931098730-318b6f776db0?w=1600&auto=format"
+          className="absolute inset-0 w-full h-full object-cover"
+          alt="CTA background"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-900/80 to-black/70" />
+        <div className="relative max-w-7xl mx-auto px-4 text-center text-white">
+          <h2 className="text-4xl md:text-5xl font-extrabold mb-4">Ready to Order?</h2>
+          <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">
+            Authentic Ethiopian food from Gozamen Restaurant, delivered hot to your door
+          </p>
+          {isAuthenticated ? (
+            <button
+              onClick={handleOrderNow}
+              className="inline-flex items-center gap-2 bg-white text-orange-600 px-8 py-3.5 rounded-full font-bold text-lg hover:bg-orange-50 transition shadow-xl"
+            >
+              Order Now <FiArrowRight />
+            </button>
+          ) : (
+            <div className="flex items-center justify-center gap-4 flex-wrap">
+              <Link
+                to="/register"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-3.5 rounded-full font-bold text-lg hover:from-orange-600 hover:to-red-600 transition shadow-xl"
+              >
+                Create Free Account <FiArrowRight />
+              </Link>
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/30 text-white px-8 py-3.5 rounded-full font-bold text-lg hover:bg-white/20 transition"
+              >
+                Sign In
+              </Link>
             </div>
-          ))}
+          )}
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="relative py-24 text-center text-white">
-        <img src="https://images.unsplash.com/photo-1481931098730-318b6f776db0?w=1600" className="absolute inset-0 w-full h-full object-cover" alt="CTA" />
-        <div className="absolute inset-0 bg-black/60" />
-        <div className="relative px-4">
-          <h2 className="text-4xl font-bold mb-4">Ready to Satisfy Your Cravings?</h2>
-          <p className="mb-8 text-lg">Join thousands of happy customers today</p>
-          <Link className="bg-white text-orange-600 px-8 py-3 rounded-full font-bold inline-flex items-center gap-2">
-            Order Now <FiArrowRight />
-          </Link>
+      {/* ── FOOTER ── */}
+      <footer className="bg-gray-900 text-gray-400 py-12">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid md:grid-cols-3 gap-8 mb-8">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+                  <span className="text-sm">🍽️</span>
+                </div>
+                <span className="font-extrabold text-white text-lg">Gozamen <span className="text-orange-500">Restaurant</span></span>
+              </div>
+              <p className="text-sm leading-relaxed">
+                Authentic Ethiopian cuisine delivered to your door. Fresh ingredients, traditional recipes.
+              </p>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-3">Quick Links</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link to="/" className="hover:text-orange-400 transition-colors">Home</Link></li>
+                {restaurant && (
+                  <li><Link to={`/restaurant/${restaurant._id}`} className="hover:text-orange-400 transition-colors">Full Menu</Link></li>
+                )}
+                <li><Link to="/register" className="hover:text-orange-400 transition-colors">Register</Link></li>
+                <li><Link to="/login" className="hover:text-orange-400 transition-colors">Login</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-3">Contact & Payments</h4>
+              {restaurant && (
+                <p className="text-sm flex items-center gap-1.5 mb-2">
+                  <FiPhone size={13} /> {restaurant.contact?.phone || '0911000000'}
+                </p>
+              )}
+              {restaurant && (
+                <p className="text-sm flex items-center gap-1.5 mb-3">
+                  <FiMapPin size={13} /> {restaurant.address?.street}, {restaurant.address?.city}
+                </p>
+              )}
+              <div className="flex gap-2 flex-wrap">
+                {['📱 Telebirr', '🏦 CBEBirr', '💵 Cash'].map(p => (
+                  <span key={p} className="bg-gray-800 text-xs px-2 py-1 rounded-md">{p}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-gray-800 pt-6 text-center text-sm">
+            <p>© {new Date().getFullYear()} Gozamen Restaurant, Addis Ababa. All rights reserved.</p>
+          </div>
         </div>
-      </section>
+      </footer>
     </div>
   );
 };

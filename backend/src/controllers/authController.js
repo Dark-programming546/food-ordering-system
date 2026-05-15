@@ -15,6 +15,18 @@ const register = async (req, res) => {
   try {
     const { name, email, password, phone, role } = req.body;
 
+    // Only allow customer and delivery self-registration
+    // admin is pre-created by developer
+    // delivery staff is created by admin
+    const allowedRoles = ['customer'];
+    const requestedRole = role || 'customer';
+    if (!allowedRoles.includes(requestedRole)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only customer accounts can be self-registered'
+      });
+    }
+
     // Check if user exists
     const userExists = await User.findOne({ email });
     if (userExists) {

@@ -23,19 +23,15 @@ router.post('/test', (req, res) => {
 // Public routes
 router.get('/track/:orderNumber', trackOrder);
 
-// Protected routes - Customer (no authorize for create to test)
-router.post('/create', protect, (req, res, next) => {
-  console.log('📦 Create order route hit');
-  next();
-}, createOrder);
-
+// Protected routes - Customer
+router.post('/create', protect, authorize('customer'), createOrder);
 router.get('/customer', protect, authorize('customer'), getCustomerOrders);
 router.put('/:id/cancel', protect, authorize('customer'), cancelOrder);
 
-// Protected routes - Restaurant
-router.get('/restaurant', protect, authorize('restaurant'), getRestaurantOrders);
-router.put('/:id/status', protect, authorize('restaurant'), updateOrderStatus);
-router.put('/:id/assign-delivery', protect, authorize('restaurant'), assignDeliveryPerson);
+// Protected routes - Admin (manages the restaurant)
+router.get('/restaurant', protect, authorize('admin'), getRestaurantOrders);
+router.put('/:id/status', protect, authorize('admin'), updateOrderStatus);
+router.put('/:id/assign-delivery', protect, authorize('admin'), assignDeliveryPerson);
 
 // Protected routes - Delivery
 router.get('/delivery', protect, authorize('delivery'), getDeliveryOrders);

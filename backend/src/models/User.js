@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['customer', 'restaurant', 'delivery', 'admin'],
+    enum: ['customer', 'delivery', 'admin'],
     default: 'customer'
   },
   phone: {
@@ -39,7 +39,7 @@ const userSchema = new mongoose.Schema({
     city: String,
     state: String,
     zipCode: String,
-    country: { type: String, default: 'USA' }
+    country: { type: String, default: 'Ethiopia' }
   },
   profileImage: {
     type: String,

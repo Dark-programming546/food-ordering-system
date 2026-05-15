@@ -90,9 +90,9 @@ const Login = () => {
         >
           {/* Logo/Brand */}
           <div className="text-center mb-6">
-            <div className="text-6xl mb-3 drop-shadow-lg">🍕</div>
+            <div className="text-6xl mb-3 drop-shadow-lg">🍽️</div>
             <h2 className="text-3xl font-bold text-white drop-shadow-lg">Welcome Back!</h2>
-            <p className="mt-1 text-white/80 text-sm">Sign in to continue your food journey</p>
+            <p className="mt-1 text-white/80 text-sm">Sign in to Gozamen Restaurant</p>
           </div>
 
           {/* Login Form Card */}

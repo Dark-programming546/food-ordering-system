@@ -13,9 +13,9 @@ const { protect, authorize } = require('../middleware/auth');
 router.get('/', getRestaurants);
 router.get('/:id', getRestaurantById);
 
-// Protected routes
-router.post('/', protect, authorize('restaurant'), createRestaurant);
-router.put('/:id', protect, authorize('restaurant', 'admin'), updateRestaurant);
-router.get('/my-restaurant/profile', protect, authorize('restaurant'), getMyRestaurant);
+// Admin-only routes (owner manages the restaurant)
+router.post('/', protect, authorize('admin'), createRestaurant);
+router.put('/:id', protect, authorize('admin'), updateRestaurant);
+router.get('/my-restaurant/profile', protect, authorize('admin'), getMyRestaurant);
 
 module.exports = router;

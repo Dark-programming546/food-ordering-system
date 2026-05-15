@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import { 
   FiUser, FiMail, FiLock, FiPhone, FiEye, FiEyeOff, 
-  FiUserPlus, FiUserCheck, FiTruck, FiBriefcase
+  FiUserPlus, FiUserCheck
 } from 'react-icons/fi';
 
 const Register = () => {
@@ -91,11 +91,8 @@ const Register = () => {
     setLoading(false);
   };
 
-  const roles = [
-    { value: 'customer', label: 'Customer', icon: <FiUserCheck className="w-4 h-4" />, color: 'from-blue-500 to-blue-600' },
-    { value: 'restaurant', label: 'Restaurant Owner', icon: <FiBriefcase className="w-4 h-4" />, color: 'from-orange-500 to-red-500' },
-    { value: 'delivery', label: 'Delivery Partner', icon: <FiTruck className="w-4 h-4" />, color: 'from-green-500 to-green-600' },
-  ];
+  // Only customer self-registration allowed
+  // Delivery staff is created by admin, admin is pre-created by developer
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -127,9 +124,9 @@ const Register = () => {
         >
           {/* Logo/Brand */}
           <div className="text-center mb-6">
-            <div className="text-6xl mb-3 drop-shadow-lg">🍕</div>
+            <div className="text-6xl mb-3 drop-shadow-lg">🍽️</div>
             <h2 className="text-3xl font-bold text-white drop-shadow-lg">Create Account</h2>
-            <p className="mt-1 text-white/80 text-sm">Join FoodOrder and start ordering</p>
+            <p className="mt-1 text-white/80 text-sm">Join Gozamen Restaurant and start ordering</p>
           </div>
 
           {/* Register Form Card */}
@@ -189,28 +186,6 @@ const Register = () => {
                     className="w-full pl-9 pr-3 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                     placeholder="0912345678"
                   />
-                </div>
-              </div>
-
-              {/* Role Selection */}
-              <div>
-                <label className="block text-sm font-medium text-white mb-1">I want to</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {roles.map((role) => (
-                    <button
-                      key={role.value}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, role: role.value })}
-                      className={`py-1.5 px-2 rounded-xl text-xs font-medium transition-all duration-200 flex items-center justify-center space-x-1 ${
-                        formData.role === role.value
-                          ? `bg-gradient-to-r ${role.color} text-white shadow-lg scale-105`
-                          : 'bg-white/10 text-white/70 hover:bg-white/20'
-                      }`}
-                    >
-                      {role.icon}
-                      <span>{role.label}</span>
-                    </button>
-                  ))}
                 </div>
               </div>
 

@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { orderService } from '../../services/api';
 import { FiArrowLeft, FiMapPin, FiCreditCard, FiSmartphone, FiDollarSign, FiCheckCircle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-
+import { cartService } from '../../services/api';
 import PaymentModal from '../../components/common/PaymentModal';
 
 const Checkout = () => {
@@ -51,28 +51,10 @@ const Checkout = () => {
   const syncCartToBackend = async () => {
     if (hasSynced.current) return;
     hasSynced.current = true;
-    
     try {
-      await fetch('http://localhost:5000/api/cart/clear', {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
+      await cartService.clearCart();
       for (const item of cart) {
-        await fetch('http://localhost:5000/api/cart/add', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({
-            menuItemId: item.menuItemId,
-            quantity: item.quantity,
-            specialInstructions: item.specialInstructions || ''
-          })
-        });
+        await cartService.addItem(item.menuItemId, item.quantity, item.specialInstructions || '');
       }
     } catch (error) {
       console.error('Sync error:', error);

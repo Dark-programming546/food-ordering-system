@@ -128,9 +128,15 @@ export const adminService = {
   updateUserRole: (id, role) => api.put(`/admin/users/${id}/role`, { role }),
   toggleUserStatus: (id, isActive) => api.put(`/admin/users/${id}/status`, { isActive }),
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
-  getRestaurants: (params) => api.get('/admin/restaurants', { params }),
-  approveRestaurant: (id) => api.put(`/admin/restaurants/${id}/approve`),
-  blockRestaurant: (id, isActive) => api.put(`/admin/restaurants/${id}/block`, { isActive }),
+  // Delivery staff
+  getDeliveryStaff: () => api.get('/admin/delivery-staff'),
+  createDeliveryStaff: (data) => api.post('/admin/delivery-staff', data),
+  deleteDeliveryStaff: (id) => api.delete(`/admin/delivery-staff/${id}`),
+  toggleDeliveryStatus: (id, isActive) => api.put(`/admin/delivery-staff/${id}/status`, { isActive }),
+  // Restaurant settings
+  getRestaurantSettings: () => api.get('/admin/restaurant-settings'),
+  updateRestaurantSettings: (data) => api.put('/admin/restaurant-settings', data),
+  // Orders & reports
   getAllOrders: (params) => api.get('/admin/orders', { params }),
   getSalesReport: (params) => api.get('/admin/reports/sales', { params }),
 };

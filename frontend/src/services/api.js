@@ -96,13 +96,11 @@ export const cartService = {
 
 // Order Services
 export const orderService = {
-  create: (data) => {
-    console.log('📦 Order Service - Sending to backend:', data);
-    return api.post('/orders/create', data);
-  },
+  create: (data) => api.post('/orders/create', data),
   getCustomerOrders: () => api.get('/orders/customer'),
   getRestaurantOrders: (params) => api.get('/orders/restaurant', { params }),
   getDeliveryOrders: () => api.get('/orders/delivery'),
+  getAvailableOrders: () => api.get('/orders/available'),
   getById: (id) => api.get(`/orders/${id}`),
   updateStatus: (id, status, note) => api.put(`/orders/${id}/status`, { status, note }),
   assignDelivery: (id, deliveryPersonId) => api.put(`/orders/${id}/assign-delivery`, { deliveryPersonId }),
@@ -120,14 +118,21 @@ export const paymentService = {
   getDetails: (paymentId) => api.get(`/payments/${paymentId}`),
 };
 
-// Admin Services
+// Admin Services (IT Person - user management only)
 export const adminService = {
   getDashboard: () => api.get('/admin/dashboard'),
+  getSalesReport: (params) => api.get('/admin/reports/sales', { params }), // read-only
   getUsers: (params) => api.get('/admin/users', { params }),
   getUserById: (id) => api.get(`/admin/users/${id}`),
   updateUserRole: (id, role) => api.put(`/admin/users/${id}/role`, { role }),
   toggleUserStatus: (id, isActive) => api.put(`/admin/users/${id}/status`, { isActive }),
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
+  getAllOrders: (params) => api.get('/admin/all-orders', { params }),
+};
+
+// Owner Services (Restaurant Manager - full restaurant ops)
+export const ownerService = {
+  getDashboard: () => api.get('/admin/dashboard'),
   // Delivery staff
   getDeliveryStaff: () => api.get('/admin/delivery-staff'),
   createDeliveryStaff: (data) => api.post('/admin/delivery-staff', data),
@@ -139,6 +144,8 @@ export const adminService = {
   // Orders & reports
   getAllOrders: (params) => api.get('/admin/orders', { params }),
   getSalesReport: (params) => api.get('/admin/reports/sales', { params }),
+  // Customers (read-only)
+  getCustomers: () => api.get('/admin/customers'),
 };
 
 // OTP Services

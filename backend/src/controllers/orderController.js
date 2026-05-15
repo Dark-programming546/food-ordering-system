@@ -230,7 +230,7 @@ const getCustomerOrders = async (req, res) => {
 // @access  Private (Restaurant)
 const getRestaurantOrders = async (req, res) => {
   try {
-    // Get restaurant orders (admin is the owner)
+    // Get restaurant orders (owner is the manager)
     const restaurant = await Restaurant.findOne();
     if (!restaurant) {
       return res.status(404).json({
@@ -270,6 +270,22 @@ const getRestaurantOrders = async (req, res) => {
       success: false,
       message: 'Server error'
     });
+  }
+};
+
+// @desc    Get available orders (ready, unassigned) for delivery persons
+// @route   GET /api/orders/available
+// @access  Private (Delivery)
+const getAvailableOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({
+      orderStatus: 'ready',
+      $or: [{ deliveryPerson: { $exists: false } }, { deliveryPerson: null }]
+    }).sort({ createdAt: 1 });
+
+    res.status(200).json({ success: true, orders });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
@@ -330,7 +346,7 @@ const getOrderById = async (req, res) => {
     
     // Check authorization
     const isCustomer = order.customer._id.toString() === req.user.id;
-    const isAdmin = req.user.role === 'admin';
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'owner';
     const isDelivery = order.deliveryPerson && order.deliveryPerson._id.toString() === req.user.id;
     
     if (!isCustomer && !isAdmin && !isDelivery) {
@@ -378,11 +394,10 @@ const updateOrderStatus = async (req, res) => {
       });
     }
     
-    // Check if user is admin (restaurant owner)
+    // Check if user is owner (restaurant manager)
     const restaurant = await Restaurant.findOne({ owner: req.user.id });
     if (!restaurant || restaurant._id.toString() !== order.restaurant.toString()) {
-      // Admin can manage any order for the restaurant
-      if (req.user.role !== 'admin') {
+      if (req.user.role !== 'owner') {
         return res.status(403).json({
           success: false,
           message: 'Not authorized to update this order'
@@ -446,10 +461,10 @@ const assignDeliveryPerson = async (req, res) => {
       });
     }
     
-    // Check if user is admin (restaurant owner)
+    // Check if user is owner (restaurant manager)
     const restaurant = await Restaurant.findOne({ owner: req.user.id });
     if (!restaurant || restaurant._id.toString() !== order.restaurant.toString()) {
-      if (req.user.role !== 'admin') {
+      if (req.user.role !== 'owner') {
         return res.status(403).json({
           success: false,
           message: 'Not authorized'
@@ -685,6 +700,7 @@ module.exports = {
   getCustomerOrders,
   getRestaurantOrders,
   getDeliveryOrders,
+  getAvailableOrders,
   getOrderById,
   updateOrderStatus,
   assignDeliveryPerson,

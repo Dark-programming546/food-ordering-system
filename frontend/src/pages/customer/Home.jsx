@@ -135,6 +135,18 @@ const Home = () => {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleOrderNow = () => {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: restaurant ? `/restaurant/${restaurant._id}` : '/' } });
+      return;
+    }
+    if (restaurant) navigate(`/restaurant/${restaurant._id}`);
+  };
+
+  const handleViewMenu = () => {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: restaurant ? `/restaurant/${restaurant._id}` : '/' } });
+      return;
+    }
     if (restaurant) navigate(`/restaurant/${restaurant._id}`);
   };
 
@@ -282,12 +294,12 @@ const Home = () => {
               </p>
             </div>
             {restaurant && (
-              <Link
-                to={`/restaurant/${restaurant._id}`}
+              <button
+                onClick={handleViewMenu}
                 className="flex items-center gap-1.5 text-orange-500 hover:text-orange-600 font-semibold text-sm"
               >
                 Full Menu <FiChevronRight size={16} />
-              </Link>
+              </button>
             )}
           </div>
 
@@ -361,12 +373,12 @@ const Home = () => {
           {/* View Full Menu CTA */}
           {restaurant && !loading && totalItems > 0 && (
             <div className="text-center mt-10">
-              <Link
-                to={`/restaurant/${restaurant._id}`}
+              <button
+                onClick={handleViewMenu}
                 className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-3.5 rounded-full font-bold text-lg hover:from-orange-600 hover:to-red-600 transition-all shadow-lg hover:shadow-orange-500/25"
               >
                 <FiShoppingCart /> Order from Full Menu
-              </Link>
+              </button>
             </div>
           )}
         </div>
@@ -447,7 +459,7 @@ const Home = () => {
               <ul className="space-y-2 text-sm">
                 <li><Link to="/" className="hover:text-orange-400 transition-colors">Home</Link></li>
                 {restaurant && (
-                  <li><Link to={`/restaurant/${restaurant._id}`} className="hover:text-orange-400 transition-colors">Full Menu</Link></li>
+                  <li><button onClick={handleViewMenu} className="hover:text-orange-400 transition-colors">Full Menu</button></li>
                 )}
                 <li><Link to="/register" className="hover:text-orange-400 transition-colors">Register</Link></li>
                 <li><Link to="/login" className="hover:text-orange-400 transition-colors">Login</Link></li>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiPlus, FiTrash2, FiX, FiUser, FiMail, FiPhone, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
-import { adminService } from '../../services/api';
+import { ownerService } from '../../services/api';
 import toast from 'react-hot-toast';
 
 export default function AdminDelivery() {
@@ -14,7 +14,7 @@ export default function AdminDelivery() {
 
   const fetchStaff = useCallback(async () => {
     try {
-      const res = await adminService.getDeliveryStaff();
+      const res = await ownerService.getDeliveryStaff();
       setStaff(res.data.staff || []);
     } catch {
       toast.error('Failed to load delivery staff');
@@ -35,7 +35,7 @@ export default function AdminDelivery() {
     }
     setSaving(true);
     try {
-      await adminService.createDeliveryStaff(form);
+      await ownerService.createDeliveryStaff(form);
       toast.success(`${form.name} added as delivery staff`);
       setShowModal(false);
       setForm({ name: '', email: '', phone: '', password: '' });
@@ -49,7 +49,7 @@ export default function AdminDelivery() {
 
   const handleToggleStatus = async (id, isActive) => {
     try {
-      await adminService.toggleDeliveryStatus(id, !isActive);
+      await ownerService.toggleDeliveryStatus(id, !isActive);
       toast.success(`Staff ${!isActive ? 'activated' : 'deactivated'}`);
       fetchStaff();
     } catch {
@@ -61,7 +61,7 @@ export default function AdminDelivery() {
     if (!window.confirm(`Remove ${name} from delivery staff?`)) return;
     setDeletingId(id);
     try {
-      await adminService.deleteDeliveryStaff(id);
+      await ownerService.deleteDeliveryStaff(id);
       toast.success(`${name} removed`);
       fetchStaff();
     } catch {

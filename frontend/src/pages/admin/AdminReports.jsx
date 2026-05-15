@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { FiDownload, FiCalendar, FiTrendingUp, FiDollarSign, FiPackage, FiStar } from 'react-icons/fi';
-import { adminService } from '../../services/api';
+import { ownerService, adminService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { formatPrice } from '../../utils/formatPrice';
 import toast from 'react-hot-toast';
 
 const PAYMENT_COLORS = { telebirr: 'bg-blue-500', cash: 'bg-green-500', cbebirr: 'bg-purple-500', card: 'bg-orange-500' };
 
 export default function AdminReports() {
+  const { user } = useAuth();
+  const svc = user?.role === 'owner' ? ownerService : adminService;
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState(() => {
@@ -18,7 +21,7 @@ export default function AdminReports() {
   const fetchReport = async () => {
     setLoading(true);
     try {
-      const res = await adminService.getSalesReport({ startDate, endDate });
+      const res = await svc.getSalesReport({ startDate, endDate });
       setReport(res.data.report);
     } catch {
       toast.error('Failed to load report');

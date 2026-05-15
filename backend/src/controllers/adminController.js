@@ -168,7 +168,7 @@ const getUserById = async (req, res) => {
 const updateUserRole = async (req, res) => {
   try {
     const { role } = req.body;
-    const validRoles = ['customer', 'restaurant', 'delivery', 'admin'];
+    const validRoles = ['customer', 'delivery', 'owner', 'admin'];
     
     if (!validRoles.includes(role)) {
       return res.status(400).json({

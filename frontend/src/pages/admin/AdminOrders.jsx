@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiSearch, FiRefreshCw, FiCheckCircle, FiX, FiTruck, FiUser } from 'react-icons/fi';
-import { orderService, adminService } from '../../services/api';
+import { orderService, ownerService } from '../../services/api';
 import { formatPrice } from '../../utils/formatPrice';
 import toast from 'react-hot-toast';
 
@@ -35,8 +35,8 @@ export default function AdminOrders() {
   const fetchData = useCallback(async () => {
     try {
       const [ordersRes, staffRes] = await Promise.all([
-        adminService.getAllOrders(),
-        adminService.getDeliveryStaff(),
+        ownerService.getAllOrders(),
+        ownerService.getDeliveryStaff(),
       ]);
       setOrders(ordersRes.data.orders || []);
       setDeliveryStaff(staffRes.data.staff || []);

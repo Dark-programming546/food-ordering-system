@@ -147,6 +147,7 @@ export const AuthProvider = ({ children }) => {
     isRestaurant: user?.role === 'restaurant',
     isDelivery: user?.role === 'delivery',
     isAdmin: user?.role === 'admin',
+    isOwner: user?.role === 'owner',
     login,
     register,
     verifyEmail,

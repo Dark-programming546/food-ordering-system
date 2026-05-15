@@ -18,8 +18,12 @@ import Checkout from './pages/customer/Checkout';
 import OrderConfirmation from './pages/customer/OrderConfirmation';
 import CustomerDashboard from './pages/customer/CustomerDashboard';
 
-// Admin
+// Admin / Owner
 import AdminLayout from './pages/admin/AdminLayout';
+import OwnerLayout from './pages/admin/OwnerLayout';
+
+// Delivery
+import DeliveryLayout from './pages/delivery/DeliveryLayout';
 
 // Protected Route
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
@@ -47,6 +51,32 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+// Owner uses its own full-screen layout (no Navbar)
+const OwnerRoute = ({ children }) => {
+  const { user, isAuthenticated, loading } = useAuth();
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (user?.role !== 'owner') return <Navigate to="/" replace />;
+  return children;
+};
+
+// Delivery uses its own full-screen layout (no Navbar)
+const DeliveryRoute = ({ children }) => {
+  const { user, isAuthenticated, loading } = useAuth();
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (user?.role !== 'delivery') return <Navigate to="/" replace />;
+  return children;
+};
+
 const ComingSoon = ({ title }) => (
   <div className="min-h-[60vh] flex items-center justify-center">
     <div className="text-center">
@@ -62,6 +92,7 @@ function AppRoutes() {
     <Routes>
       {/* Public */}
       <Route path="/" element={<Home />} />
+      <Route path="/home" element={<Navigate to="/" replace />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
@@ -75,11 +106,14 @@ function AppRoutes() {
       <Route path="/customer/orders" element={<ProtectedRoute allowedRoles={['customer']}><CustomerDashboard /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><CustomerDashboard /></ProtectedRoute>} />
 
-      {/* Delivery */}
-      <Route path="/delivery/dashboard" element={<ProtectedRoute allowedRoles={['delivery']}><ComingSoon title="Delivery Dashboard" /></ProtectedRoute>} />
+      {/* Delivery — full screen, no Navbar */}
+      <Route path="/delivery/dashboard" element={<DeliveryRoute><DeliveryLayout /></DeliveryRoute>} />
 
       {/* Admin — full screen, no Navbar */}
       <Route path="/admin/dashboard" element={<AdminRoute><AdminLayout /></AdminRoute>} />
+
+      {/* Owner — full screen, no Navbar */}
+      <Route path="/owner/dashboard" element={<OwnerRoute><OwnerLayout /></OwnerRoute>} />
 
       {/* 404 */}
       <Route path="*" element={
@@ -99,10 +133,13 @@ function AppRoutes() {
 function AppShell() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const isOwner = user?.role === 'owner';
+  const isDelivery = user?.role === 'delivery';
+  const hideNav = isAdmin || isOwner || isDelivery;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {!isAdmin && <Navbar />}
+      {!hideNav && <Navbar />}
       <main>
         <AppRoutes />
       </main>

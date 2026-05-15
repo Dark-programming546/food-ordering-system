@@ -15,9 +15,9 @@ const register = async (req, res) => {
   try {
     const { name, email, password, phone, role } = req.body;
 
-    // Only allow customer and delivery self-registration
-    // admin is pre-created by developer
-    // delivery staff is created by admin
+    // Only customers can self-register
+    // owner and admin are pre-created by developer
+    // delivery staff is created by owner
     const allowedRoles = ['customer'];
     const requestedRole = role || 'customer';
     if (!allowedRoles.includes(requestedRole)) {

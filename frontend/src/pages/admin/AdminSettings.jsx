@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiSave, FiMapPin, FiDollarSign, FiClock, FiPhone, FiMail, FiToggleLeft, FiToggleRight } from 'react-icons/fi';
-import { adminService } from '../../services/api';
+import { ownerService } from '../../services/api';
 import { formatPrice } from '../../utils/formatPrice';
 import toast from 'react-hot-toast';
 
@@ -20,7 +20,7 @@ export default function AdminSettings() {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await adminService.getRestaurantSettings();
+        const res = await ownerService.getRestaurantSettings();
         const r = res.data.restaurant;
         setRestaurant(r);
         setForm({
@@ -55,7 +55,7 @@ export default function AdminSettings() {
         minimumOrder: parseFloat(form.minimumOrder) || 0,
         estimatedDeliveryTime: parseInt(form.estimatedDeliveryTime) || 30,
       };
-      await adminService.updateRestaurantSettings(payload);
+      await ownerService.updateRestaurantSettings(payload);
       toast.success('Settings saved successfully');
     } catch {
       toast.error('Failed to save settings');
@@ -68,7 +68,7 @@ export default function AdminSettings() {
     const newVal = !form.isOpen;
     setForm(p => ({ ...p, isOpen: newVal }));
     try {
-      await adminService.updateRestaurantSettings({ isOpen: newVal });
+      await ownerService.updateRestaurantSettings({ isOpen: newVal });
       toast.success(`Restaurant is now ${newVal ? 'Open' : 'Closed'}`);
     } catch {
       setForm(p => ({ ...p, isOpen: !newVal }));

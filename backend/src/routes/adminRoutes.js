@@ -17,32 +17,40 @@ const {
 const { protect, authorize } = require('../middleware/auth');
 
 router.use(protect);
-router.use(authorize('admin'));
 
-// Dashboard
-router.get('/dashboard', getDashboardStats);
+// ─── OWNER ROUTES (Restaurant Manager) ───────────────────────────
+// Dashboard & reports
+router.get('/dashboard', authorize('owner', 'admin'), getDashboardStats);
+router.get('/reports/sales', authorize('owner', 'admin'), getSalesReport);
 
-// User management
-router.get('/users', getAllUsers);
-router.get('/users/:id', getUserById);
-router.put('/users/:id/role', updateUserRole);
-router.put('/users/:id/status', toggleUserStatus);
-router.delete('/users/:id', deleteUser);
+// Delivery staff management
+router.get('/delivery-staff', authorize('owner'), getDeliveryStaff);
+router.post('/delivery-staff', authorize('owner'), createDeliveryStaff);
+router.put('/delivery-staff/:id/status', authorize('owner'), toggleUserStatus);
+router.delete('/delivery-staff/:id', authorize('owner'), deleteUser);
 
-// Delivery staff management (owner adds/removes delivery people)
-router.get('/delivery-staff', getDeliveryStaff);
-router.post('/delivery-staff', createDeliveryStaff);
-router.put('/delivery-staff/:id/status', toggleUserStatus);
-router.delete('/delivery-staff/:id', deleteUser);
+// Restaurant settings
+router.get('/restaurant-settings', authorize('owner'), getRestaurantSettings);
+router.put('/restaurant-settings', authorize('owner'), updateRestaurantSettings);
 
-// Restaurant settings (the single Gozamen restaurant)
-router.get('/restaurant-settings', getRestaurantSettings);
-router.put('/restaurant-settings', updateRestaurantSettings);
+// Orders (read — owner also uses /api/orders/restaurant for full management)
+router.get('/orders', authorize('owner'), getAllOrders);
 
-// Order management
-router.get('/orders', getAllOrders);
+// Customers (read-only for owner)
+router.get('/customers', authorize('owner'), (req, res, next) => {
+  req.query.role = 'customer';
+  next();
+}, getAllUsers);
 
-// Reports
-router.get('/reports/sales', getSalesReport);
+// ─── ADMIN ROUTES (IT Person) ────────────────────────────────────
+// Full user management
+router.get('/users', authorize('admin'), getAllUsers);
+router.get('/users/:id', authorize('admin'), getUserById);
+router.put('/users/:id/role', authorize('admin'), updateUserRole);
+router.put('/users/:id/status', authorize('admin'), toggleUserStatus);
+router.delete('/users/:id', authorize('admin'), deleteUser);
+
+// Admin can also view all orders (read-only oversight)
+router.get('/all-orders', authorize('admin'), getAllOrders);
 
 module.exports = router;

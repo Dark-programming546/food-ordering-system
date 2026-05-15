@@ -12,10 +12,10 @@ const { protect, authorize } = require('../middleware/auth');
 // Public routes
 router.get('/restaurant/:restaurantId', getMenuByRestaurant);
 
-// Admin-only routes
-router.post('/', protect, authorize('admin'), addMenuItem);
-router.put('/:id', protect, authorize('admin'), updateMenuItem);
-router.delete('/:id', protect, authorize('admin'), deleteMenuItem);
-router.patch('/:id/toggle', protect, authorize('admin'), toggleAvailability);
+// Owner-only routes
+router.post('/', protect, authorize('owner'), addMenuItem);
+router.put('/:id', protect, authorize('owner'), updateMenuItem);
+router.delete('/:id', protect, authorize('owner'), deleteMenuItem);
+router.patch('/:id/toggle', protect, authorize('owner'), toggleAvailability);
 
 module.exports = router;

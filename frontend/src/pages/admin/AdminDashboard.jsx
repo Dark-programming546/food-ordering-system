@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiPackage, FiDollarSign, FiUsers, FiTruck, FiRefreshCw, FiArrowUp } from 'react-icons/fi';
-import { adminService, orderService } from '../../services/api';
+import { adminService, ownerService, orderService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { formatPrice } from '../../utils/formatPrice';
 
 const STATUS_COLOR = {
@@ -16,17 +17,21 @@ const STATUS_COLOR = {
 const NEXT_STATUS = { pending: 'confirmed', confirmed: 'preparing', preparing: 'ready' };
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
+  const svc = user?.role === 'owner' ? ownerService : adminService;
   const [stats, setStats] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
   const [salesByDate, setSalesByDate] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const isOwner = user?.role === 'owner';
+
   const fetchData = async () => {
     try {
       const [dashRes, salesRes] = await Promise.all([
-        adminService.getDashboard(),
-        adminService.getSalesReport(),
+        svc.getDashboard(),
+        svc.getSalesReport(),
       ]);
       setStats(dashRes.data.stats);
       setRecentOrders(dashRes.data.recentOrders || []);
@@ -71,7 +76,9 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-gray-900">Dashboard Overview</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Welcome back, Gozamen Owner 👑</p>
+          <p className="text-gray-500 text-sm mt-0.5">
+            {isOwner ? 'Welcome back, Restaurant Manager 👑' : 'System overview · IT Admin 🛡️'}
+          </p>
         </div>
         <button onClick={handleRefresh} disabled={refreshing}
           className="flex items-center gap-2 text-sm border border-gray-200 px-3 py-2 rounded-lg hover:border-orange-300 text-gray-600 hover:text-orange-500 transition">
@@ -117,7 +124,8 @@ export default function AdminDashboard() {
                     <span className={`text-xs px-2 py-0.5 rounded-full font-semibold capitalize ${STATUS_COLOR[order.orderStatus] || 'bg-gray-100 text-gray-600'}`}>
                       {order.orderStatus}
                     </span>
-                    {next && (
+                    {/* Only owner can advance order status */}
+                    {isOwner && next && (
                       <button onClick={() => handleAdvance(order._id, next)}
                         className="text-xs bg-orange-500 text-white px-2 py-0.5 rounded-lg hover:bg-orange-600 transition capitalize">
                         → {next}

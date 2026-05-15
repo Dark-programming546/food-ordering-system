@@ -5,6 +5,7 @@ const {
   getCustomerOrders,
   getRestaurantOrders,
   getDeliveryOrders,
+  getAvailableOrders,
   getOrderById,
   updateOrderStatus,
   assignDeliveryPerson,
@@ -28,13 +29,14 @@ router.post('/create', protect, authorize('customer'), createOrder);
 router.get('/customer', protect, authorize('customer'), getCustomerOrders);
 router.put('/:id/cancel', protect, authorize('customer'), cancelOrder);
 
-// Protected routes - Admin (manages the restaurant)
-router.get('/restaurant', protect, authorize('admin'), getRestaurantOrders);
-router.put('/:id/status', protect, authorize('admin'), updateOrderStatus);
-router.put('/:id/assign-delivery', protect, authorize('admin'), assignDeliveryPerson);
+// Protected routes - Owner (restaurant manager)
+router.get('/restaurant', protect, authorize('owner'), getRestaurantOrders);
+router.put('/:id/status', protect, authorize('owner'), updateOrderStatus);
+router.put('/:id/assign-delivery', protect, authorize('owner'), assignDeliveryPerson);
 
 // Protected routes - Delivery
 router.get('/delivery', protect, authorize('delivery'), getDeliveryOrders);
+router.get('/available', protect, authorize('delivery'), getAvailableOrders);
 router.put('/:id/delivery-status', protect, authorize('delivery'), updateDeliveryStatus);
 
 // Protected routes - All roles

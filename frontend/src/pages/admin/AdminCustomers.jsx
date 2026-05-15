@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiSearch, FiMail, FiPhone, FiCalendar, FiPackage } from 'react-icons/fi';
-import { adminService } from '../../services/api';
+import { ownerService } from '../../services/api';
 import { formatPrice } from '../../utils/formatPrice';
 import toast from 'react-hot-toast';
 
@@ -11,7 +11,7 @@ export default function AdminCustomers() {
 
   const fetchCustomers = useCallback(async () => {
     try {
-      const res = await adminService.getUsers({ role: 'customer' });
+      const res = await ownerService.getCustomers();
       setCustomers(res.data.users || []);
     } catch {
       toast.error('Failed to load customers');

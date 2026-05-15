@@ -153,48 +153,24 @@ const updateCartItem = async (req, res) => {
   try {
     const { menuItemId } = req.params;
     const { quantity } = req.body;
-
     if (!quantity || quantity < 1) {
-      return res.status(400).json({
-        success: false,
-        message: 'Quantity must be at least 1'
-      });
+      return res.status(400).json({ success: false, message: 'Quantity must be at least 1' });
     }
-
     const cart = await Cart.findOne({ user: req.user.id });
     if (!cart) {
-      return res.status(404).json({
-        success: false,
-        message: 'Cart not found'
-      });
+      return res.status(200).json({ success: true, message: 'Cart is empty' });
     }
-
     const itemIndex = cart.items.findIndex(item => item.menuItem.toString() === menuItemId);
     if (itemIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        message: 'Item not found in cart'
-      });
+      return res.status(200).json({ success: true, message: 'Item not in cart' });
     }
-
     cart.items[itemIndex].quantity = quantity;
     await cart.save();
-
-    // Populate for response
     await cart.populate('items.menuItem', 'name price image isAvailable');
-
-    res.status(200).json({
-      success: true,
-      message: 'Cart item updated successfully',
-      cart
-    });
+    res.status(200).json({ success: true, message: 'Cart item updated successfully', cart });
   } catch (error) {
     console.error('Update cart item error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
 
@@ -204,41 +180,21 @@ const updateCartItem = async (req, res) => {
 const removeFromCart = async (req, res) => {
   try {
     const { menuItemId } = req.params;
-
     const cart = await Cart.findOne({ user: req.user.id });
     if (!cart) {
-      return res.status(404).json({
-        success: false,
-        message: 'Cart not found'
-      });
+      return res.status(200).json({ success: true, message: 'Cart already empty' });
     }
-
     const itemIndex = cart.items.findIndex(item => item.menuItem.toString() === menuItemId);
     if (itemIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        message: 'Item not found in cart'
-      });
+      return res.status(200).json({ success: true, message: 'Item not in cart' });
     }
-
     cart.items.splice(itemIndex, 1);
     await cart.save();
-
-    // Populate for response
     await cart.populate('items.menuItem', 'name price image isAvailable');
-
-    res.status(200).json({
-      success: true,
-      message: 'Item removed from cart successfully',
-      cart
-    });
+    res.status(200).json({ success: true, message: 'Item removed from cart successfully', cart });
   } catch (error) {
     console.error('Remove from cart error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
 
@@ -249,27 +205,15 @@ const clearCart = async (req, res) => {
   try {
     const cart = await Cart.findOne({ user: req.user.id });
     if (!cart) {
-      return res.status(404).json({
-        success: false,
-        message: 'Cart not found'
-      });
+      // No cart exists — already empty, treat as success
+      return res.status(200).json({ success: true, message: 'Cart already empty' });
     }
-
     cart.items = [];
     await cart.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Cart cleared successfully',
-      cart
-    });
+    res.status(200).json({ success: true, message: 'Cart cleared successfully', cart });
   } catch (error) {
     console.error('Clear cart error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
 

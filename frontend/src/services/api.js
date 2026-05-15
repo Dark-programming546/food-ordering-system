@@ -29,25 +29,17 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const message = error.response?.data?.message || 'Something went wrong';
-    
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
       toast.error('Session expired. Please login again.');
     } else if (error.response?.status === 403) {
-      toast.error('You don\'t have permission to perform this action');
-    } else if (error.response?.status === 404) {
-      toast.error('Resource not found');
+      toast.error("You don't have permission to perform this action");
     } else if (error.response?.status >= 500) {
       toast.error('Server error. Please try again later');
     }
-    // ✅ REMOVE THE ELSE BLOCK THAT SHOWS TOAST FOR OTHER ERRORS
-    // else {
-    //   toast.error(message);
-    // }
-    
+    // 404 is handled silently — individual callers show their own messages
     return Promise.reject(error);
   }
 );

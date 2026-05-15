@@ -52,7 +52,8 @@ const Checkout = () => {
     if (hasSynced.current) return;
     hasSynced.current = true;
     try {
-      await cartService.clearCart();
+      // clearCart returns 404 if no cart exists yet — that's fine, ignore it
+      await cartService.clearCart().catch(() => {});
       for (const item of cart) {
         await cartService.addItem(item.menuItemId, item.quantity, item.specialInstructions || '');
       }

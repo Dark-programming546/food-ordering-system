@@ -13,10 +13,14 @@ export default function AdminReports() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState(() => {
-    const d = new Date(); d.setDate(1);
-    return d.toISOString().split('T')[0];
+    const d = new Date();
+    d.setDate(1);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
   });
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  });
 
   const fetchReport = async () => {
     setLoading(true);
@@ -60,27 +64,44 @@ export default function AdminReports() {
     return Object.values(totals).map(t => ({ ...t, pct: total > 0 ? Math.round((t.amount / total) * 100) : 0 }));
   }, [report]);
 
+  const escapeCSV = (val) => {
+    const str = val == null ? '' : String(val);
+    // Wrap in quotes if contains comma, quote, or newline; escape inner quotes
+    return /[,"\n\r]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+  };
+
   const exportCSV = () => {
     if (!report?.orders?.length) { toast.error('No data to export'); return; }
-    const rows = [['Date', 'Order #', 'Customer', 'Items', 'Total', 'Payment', 'Status']];
-    report.orders.forEach(o => {
-      rows.push([
-        new Date(o.createdAt).toLocaleDateString(),
-        o.orderNumber,
-        o.customerName,
-        o.items?.map(i => `${i.name}x${i.quantity}`).join('; '),
-        o.totalAmount?.toFixed(2),
-        o.paymentMethod,
-        o.orderStatus,
-      ]);
-    });
-    const csv = rows.map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+
+    const headers = ['Date', 'Order #', 'Customer', 'Phone', 'Items', 'Subtotal (Br)', 'Delivery Fee (Br)', 'Total (Br)', 'Payment Method', 'Status'];
+
+    const dataRows = report.orders.map(o => [
+      new Date(o.createdAt).toLocaleDateString('en-ET', { year: 'numeric', month: '2-digit', day: '2-digit' }),
+      o.orderNumber,
+      o.customerName,
+      o.customerPhone,
+      o.items?.map(i => `${i.name} x${i.quantity}`).join('; '),
+      o.subtotal?.toFixed(2) ?? o.totalAmount?.toFixed(2),
+      o.deliveryFee?.toFixed(2) ?? '0.00',
+      o.totalAmount?.toFixed(2),
+      o.paymentMethod,
+      o.orderStatus,
+    ]);
+
+    // BOM for Excel to detect UTF-8 correctly (fixes Amharic/special chars)
+    const BOM = '\uFEFF';
+    const csv = BOM + [headers, ...dataRows]
+      .map(row => row.map(escapeCSV).join(','))
+      .join('\r\n'); // CRLF for Excel compatibility
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url;
-    a.download = `gozamen-report-${startDate}-${endDate}.csv`; a.click();
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gozamen-report-${startDate}-${endDate}.csv`;
+    a.click();
     URL.revokeObjectURL(url);
-    toast.success('Report exported');
+    toast.success(`Exported ${dataRows.length} orders`);
   };
 
   return (

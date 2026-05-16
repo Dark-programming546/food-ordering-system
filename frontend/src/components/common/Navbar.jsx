@@ -58,7 +58,7 @@ const Navbar = () => {
               <span className="text-lg">🍕</span>
             </div>
             <span className="font-extrabold text-xl text-gray-900">
-              Food<span className="text-orange-500">Order</span>
+             Gozamen<span className="text-orange-500"> Resturant</span>
             </span>
           </Link>
 
